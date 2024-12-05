@@ -26,6 +26,18 @@ function App() {
     setShowalert(false);
   }
 
+  const stopCameraStreaming = () => {
+    const video = document.getElementById('camera-feed');
+    console.log(video)
+    const stream = video.srcObject;
+    if (stream) {
+      const tracks = stream.getTracks();
+      tracks.forEach((track) => track.stop());
+      video.srcObject = null;
+    }
+  }
+
+
   const clearAllCanvas = () => {
     for (let i = 1; i <= 5; i++) {
       const canvas = document.getElementById(`camera-canvas${i}`);
@@ -133,6 +145,9 @@ function App() {
                   if (detail.requestedStepIndex == 1 && selectedImage == null) {
                     setShowalert(true)
                   } else {
+                    if (detail.requestedStepIndex == 1) {
+                      stopCameraStreaming()
+                    }
                     setActiveStepIndex(detail.requestedStepIndex);
                   }
                 }
@@ -196,7 +211,7 @@ function App() {
                                 {
                                   id: "image_id",
                                   content: item => (<img src={`./garments/${item.image_id}`} width="100%" />),
-                                  
+
                                 },
                               ]
                             }}
