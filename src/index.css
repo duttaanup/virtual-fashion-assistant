@@ -8,5 +8,46 @@
   border: 5px solid #006ce0;
   border-radius: 54px;
   box-shadow: 10px 10px 19px;
-  
+  max-width: 300px;
+  height: auto;
+  object-fit: contain; 
+}
+
+.canvas-photo {
+  visibility: visible;
+  width: 100px;
+  border: 3px solid #e1e6ec;
+  border-radius: 13px;
+  box-shadow: 1px 1px 7px;
+  min-height: 75px;
+  transition: all 0.3s ease; /* Add smooth transition for all changes */
+  cursor: pointer;
+}
+
+/* Hover effect when mouse enters */
+.canvas-photo:hover {
+  border-color: #006ce0; /* Match your camera-feed border color */
+  box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.3);
+  transform: scale(1.05); /* Slightly increase size on hover */
+}
+
+/* Optional: Effect when mouse is pressed down */
+.canvas-photo:active {
+  transform: scale(0.98);
+  box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.2);
+}
+.canvas-photo-selected{
+  visibility: visible;
+  width: 100px;
+  border: 3px solid #e1e6ec;
+  border-radius: 13px;
+  box-shadow: 1px 1px 7px;
+  min-height: 75px;
+  border-color: #006ce0; /* Match your camera-feed border color */
+  box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+.canvas-photo-hidden{
+  visibility: hidden;
+  width: 100px;
 }
