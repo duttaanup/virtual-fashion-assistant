@@ -1,7 +1,9 @@
-import { AppLayout, Container, ContentLayout, Header, TopNavigation, } from "@cloudscape-design/components";
+import { AppLayout, Container, ContentLayout, Header, TopNavigation } from "@cloudscape-design/components";
 import { Authenticator } from "@aws-amplify/ui-react";
 import { Routes, Route, HashRouter } from 'react-router-dom';
 import Home from "./pages/Home";
+import Register from "./pages/Register";
+import Fashion from "./pages/Fashion";
 const Router = HashRouter;
 
 export default function App() {
@@ -59,8 +61,8 @@ export default function App() {
                   <Router>
                     <Routes>
                       <Route path="/" element={<Home />} />
-                      <Route path="/registration" element={<>registration</>} />
-                      <Route path="/fashion" element={<>Fashion</>} />
+                      <Route path="/registration" element={<Register />} />
+                      <Route path="/fashion" element={<Fashion />} />
                     </Routes>
                   </Router>
                 </Container>

@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { Alert, Box, Button, Container, SpaceBetween, Wizard } from "@cloudscape-design/components";
+import { Alert, Box, BreadcrumbGroup, Button, Cards, Container, SegmentedControl, SpaceBetween, Wizard } from "@cloudscape-design/components";
 import { useEffect, useState } from "react";
 import { garmentList } from "../common";
 
@@ -27,7 +27,6 @@ export default function Fashion() {
 
     const stopCameraStreaming = () => {
         const video = document.getElementById('camera-feed');
-        console.log(video)
         const stream = video.srcObject;
         if (stream) {
             const tracks = stream.getTracks();
@@ -35,7 +34,6 @@ export default function Fashion() {
             video.srcObject = null;
         }
     }
-
 
     const clearAllCanvas = () => {
         for (let i = 1; i <= 5; i++) {
@@ -88,11 +86,19 @@ export default function Fashion() {
 
     useEffect(() => {
         setImagecount(1);
-        if (activeStepIndex == 0)
+        if (activeStepIndex == 1)
             initializeCamera()
     }, [activeStepIndex])
 
-    return (<Wizard
+    return (<Container fitHeight header={
+        <BreadcrumbGroup
+            items={[
+                { text: "Home", href: "#" },
+                { text: "Try Out", href: "#/fashion" },
+            ]}
+        />
+    }>
+        <Wizard
         i18nStrings={{
             stepNumberLabel: stepNumber =>
                 `Step ${stepNumber}`,
@@ -104,7 +110,7 @@ export default function Fashion() {
             cancelButton: "Cancel",
             previousButton: "Previous",
             nextButton: "Next",
-            submitButton: "Generate Images",
+            submitButton: "Sumbit for Generation",
             optional: "optional"
         }}
 
@@ -114,10 +120,13 @@ export default function Fashion() {
         }}
 
         onNavigate={({ detail }) => {
-            if (detail.requestedStepIndex == 1 && selectedImage == null) {
+            if(detail.requestedStepIndex == 1){
+                console.log(detail.requestedStepIndex)
+            }
+            else if (detail.requestedStepIndex == 2 && selectedImage == null) {
                 setShowalert(true)
             } else {
-                if (detail.requestedStepIndex == 1) {
+                if (detail.requestedStepIndex !== 1) {
                     stopCameraStreaming()
                 }
                 setActiveStepIndex(detail.requestedStepIndex);
@@ -126,6 +135,17 @@ export default function Fashion() {
         }
         activeStepIndex={activeStepIndex}
         steps={[
+            {
+                title: "Select Id",
+                description: "",
+                content: (
+                    <Container fitHeight>
+                        <SpaceBetween size="l" alignItems="center">
+                            <Box color="text-body-secondary">Select an Id to proceed</Box>
+                        </SpaceBetween>
+                    </Container>
+                )
+            },
             {
                 title: "Click a Photo",
                 description: "",
@@ -193,23 +213,12 @@ export default function Fashion() {
                                 ]}
                                 items={garmentList.filter(e => e.gender == selectedId)}
                                 loadingText="Loading resources"
-                                empty={
-                                    <Box
-                                        margin={{ vertical: "xs" }}
-                                        textAlign="center"
-                                        color="inherit"
-                                    >
-                                        <SpaceBetween size="m">
-                                            <b>No resources</b>
-                                            <Button>Create resource</Button>
-                                        </SpaceBetween>
-                                    </Box>
-                                }
                             />
                         </SpaceBetween>
                     </Container>
                 ),
             }
         ]}
-    />)
+    />
+    </Container>)
 }
