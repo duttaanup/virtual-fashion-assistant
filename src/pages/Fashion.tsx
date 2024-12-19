@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { garmentList } from "../common";
 import { AppApi } from "../common/AppApi";
 import { AppUtility } from "../common/Util";
+import { uploadData } from 'aws-amplify/storage';
 
 let VIDEO_STREAM = null;
 
@@ -105,6 +106,10 @@ export default function Fashion() {
         const output = JSON.parse(result);
         setGender(output)
         setSelectedGender(output.gender)
+        const file_upload_result = await uploadData({
+            path: `raw/${user.user_id}/${AppUtility.fileName()}`,
+            data: AppUtility.base64ToBlob(selectedImage, 'image/png'),
+        });
         setIsLoadingNext(false);
         stopCameraStreaming()
         setActiveStepIndex(nextStep);
@@ -114,17 +119,18 @@ export default function Fashion() {
             setIsLoadingNext(true);
             const userId = AppUtility.guid()
             const newUser = {
-                "action": "ADD_USER",
-                "data": {
-                    "email": inputValue,
-                    "user_id": userId,
-                    "process_state": "Registered",
-                    "selected_image": "",
-                    "create_on": new Date().toISOString(),
-                    "update_on": new Date().toISOString(),
-                }
+                "email": inputValue,
+                "user_id": userId,
+                "process_state": "Registered",
+                "selected_image": "",
+                "create_on": new Date().toISOString(),
+                "update_on": new Date().toISOString(),
             }
-            await AppApi.dbPostOperation(newUser);
+            const payload = {
+                "action": "ADD_USER",
+                "data": newUser
+            }
+            await AppApi.dbPostOperation(payload);
             setUser(newUser)
             setIsLoadingNext(false);
             setActiveStepIndex(nextStep);

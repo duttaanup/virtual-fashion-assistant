@@ -1,6 +1,7 @@
 import { defineBackend } from '@aws-amplify/backend';
 import { aws_dynamodb, RemovalPolicy, Stack } from "aws-cdk-lib";
 import { auth } from "./auth/resource";
+import { storage } from "./storage/resource";
 import {
     AuthorizationType,
     CognitoUserPoolsAuthorizer,
@@ -12,7 +13,7 @@ import { Policy, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { dbApiFunction , aiApiFunction , confyApiFunction } from "./functions/api-function/resource";
 
 const backend = defineBackend({
- auth, dbApiFunction, aiApiFunction , confyApiFunction 
+ auth, dbApiFunction, aiApiFunction , confyApiFunction , storage
 });
 
 const apiStack = backend.createStack("vfa-api-stack");
