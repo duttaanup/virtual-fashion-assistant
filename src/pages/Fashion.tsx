@@ -1,13 +1,16 @@
 //@ts-nocheck
-import { Alert, Box, BreadcrumbGroup, Button, Cards, Container, SegmentedControl, SpaceBetween, Wizard } from "@cloudscape-design/components";
+import { Alert, Box, BreadcrumbGroup, Button, Cards, Container, FormField, Header, Input, SegmentedControl, SpaceBetween, Wizard } from "@cloudscape-design/components";
 import { useEffect, useState } from "react";
 import { garmentList } from "../common";
 import { AppApi } from "../common/AppApi";
+import { AppUtility } from "../common/Util";
 
 let VIDEO_STREAM = null;
 
 export default function Fashion() {
     const [activeStepIndex, setActiveStepIndex] = useState(0);
+    const [inputValue, setInputValue] = useState("");
+    const [user, setUser] = useState(null);
     const [imagecount, setImagecount] = useState(1);
     const [showalert, setShowalert] = useState(false);
     const [selectedImage, setSelectedimage] = useState(null);
@@ -30,7 +33,6 @@ export default function Fashion() {
         setSelectedimage(null);
         setShowalert(false);
     }
-
     const stopCameraStreaming = () => {
         try {
             if (VIDEO_STREAM) {
@@ -41,7 +43,6 @@ export default function Fashion() {
             console.log(e)
         }
     }
-
     const clearAllCanvas = () => {
         for (let i = 1; i <= 5; i++) {
             try {
@@ -63,7 +64,6 @@ export default function Fashion() {
         setGender(null);
         setIsLoadingNext(false);
     }
-
     const capturePhoto = () => {
         let counter = imagecount;
         const video = document.getElementById('camera-feed');
@@ -76,7 +76,6 @@ export default function Fashion() {
         setImagecount(counter);
         setShowalert(false);
     }
-
     const selectCanvasImage = (detail) => {
         const canvas = document.getElementById(detail.target.id);
         const dataUrl = canvas.toDataURL();
@@ -110,7 +109,40 @@ export default function Fashion() {
         stopCameraStreaming()
         setActiveStepIndex(nextStep);
     }
+    const registerUser = async (nextStep) => {
+        if (inputValue != "") {
+            setIsLoadingNext(true);
+            const userId = AppUtility.guid()
+            const newUser = {
+                "email": inputValue,
+                "user_id": userId,
+                "process_state": "Registered",
+                "selected_image": "",
+                "create_on": new Date().toISOString(),
+                "update_on": new Date().toISOString(),
+            }
+            await AppApi.dbPostOperation(newUser);
+            setUser(newUser)
+            setIsLoadingNext(false);
+            setActiveStepIndex(nextStep);
+        }
+    }
 
+    const controlNavigation = (detail) => {
+        if (detail.requestedStepIndex == 1) {
+            registerUser(detail.requestedStepIndex);
+        }
+        else if (detail.requestedStepIndex == 2) {
+            if (selectedImage == null)
+                setShowalert(true)
+            else {
+                submitPhoto(detail.requestedStepIndex)
+            }
+        } else {
+            stopCameraStreaming();
+            setActiveStepIndex(detail.requestedStepIndex);
+        }
+    }
     useEffect(() => {
         setImagecount(1);
         if (activeStepIndex == 1)
@@ -153,31 +185,29 @@ export default function Fashion() {
                 clearAllCanvas();
             }}
 
-            onNavigate={({ detail }) => {
-                if (detail.requestedStepIndex == 1) {
-                    setActiveStepIndex(detail.requestedStepIndex);
-                }
-                else if (detail.requestedStepIndex == 2) {
-                    if (selectedImage == null)
-                        setShowalert(true)
-                    else {
-                        submitPhoto(detail.requestedStepIndex)
-                    }
-                } else {
-                    stopCameraStreaming();
-                    setActiveStepIndex(detail.requestedStepIndex);
-                }
-            }
+            onNavigate={({ detail }) => { controlNavigation(detail) }
             }
             activeStepIndex={activeStepIndex}
             steps={[
                 {
-                    title: "Select Id",
+                    title: "Participant Registration",
                     description: "",
                     content: (
                         <Container fitHeight>
-                            <SpaceBetween size="l" alignItems="center">
-                                <Box color="text-body-secondary">Select an Id to proceed</Box>
+                            <SpaceBetween size="l">
+                                <FormField
+                                    description="Provide participant's email id"
+                                    label="Email"
+                                >
+                                    <Input
+                                        placeholder="Enter email id"
+                                        type="email"
+                                        value={inputValue}
+                                        onChange={event =>
+                                            setInputValue(event.detail.value)
+                                        }
+                                    />
+                                </FormField>
                             </SpaceBetween>
                         </Container>
                     )
@@ -224,6 +254,7 @@ export default function Fashion() {
                                     ]}
                                 />
                                 <pre>{JSON.stringify(gender)}</pre>
+                                <pre>{JSON.stringify(user)}</pre>
                                 <Cards
                                     ariaLabels={{
                                         itemSelectionLabel: (e, t) => `select ${t.name}`,

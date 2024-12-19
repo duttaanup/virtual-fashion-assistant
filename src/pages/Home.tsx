@@ -9,7 +9,7 @@ export default function Home() {
             <div>
                 <a href="#/registration">
                     <div className="home_navigation_card registration_card">
-                        <span className="home_navigation_title">Registration</span>
+                        <span className="home_navigation_title">Participants</span>
                     </div>
                 </a>
             </div>
