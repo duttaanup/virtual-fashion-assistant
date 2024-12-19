@@ -9,7 +9,9 @@ export default function Fashion() {
     const [imagecount, setImagecount] = useState(1);
     const [showalert, setShowalert] = useState(false);
     const [selectedImage, setSelectedimage] = useState(null);
-    const [selectedId, setSelectedId] = useState("male");
+    const [selectedGender, setSelectedGender] = useState(null);
+    const [gender, setGender] = useState(null);
+    const [isLoadingNext, setIsLoadingNext] = useState(false);
 
     const initializeCamera = () => {
         const video = document.getElementById('camera-feed');
@@ -36,11 +38,6 @@ export default function Fashion() {
         }
     }
 
-    const callAI = async () => {
-        console.log(selectedImage);
-        const response = await AppApi.makeAICall(selectedImage);
-        console.log(response);
-    }
     const clearAllCanvas = () => {
         for (let i = 1; i <= 5; i++) {
             const canvas = document.getElementById(`camera-canvas${i}`);
@@ -89,6 +86,18 @@ export default function Fashion() {
         setSelectedimage(dataUrl);
         setShowalert(false);
     }
+    const submitPhoto = async (nextStep) => {
+        setIsLoadingNext(true);
+        const ai_response = await AppApi.aiOperation(selectedImage);
+        const model_response = ai_response.response.output.message.content[0]
+        const result = model_response.text.replace(/\n/g, "").replace("json","").replace(/`/g,"");
+        const output = JSON.parse(result);
+        setGender(output)
+        setSelectedGender(output.gender)
+        setActiveStepIndex(nextStep);
+        setIsLoadingNext(false);
+        stopCameraStreaming()
+    }
 
     useEffect(() => {
         setImagecount(1);
@@ -105,130 +114,124 @@ export default function Fashion() {
         />
     }>
         <Wizard
-        i18nStrings={{
-            stepNumberLabel: stepNumber =>
-                `Step ${stepNumber}`,
-            collapsedStepsLabel: (stepNumber, stepsCount) =>
-                `Step ${stepNumber} of ${stepsCount}`,
-            skipToButtonLabel: (step, stepNumber) =>
-                `Skip to ${step.title}`,
-            navigationAriaLabel: "Steps",
-            cancelButton: "Cancel",
-            previousButton: "Previous",
-            nextButton: "Next",
-            submitButton: "Sumbit for Generation",
-            optional: "optional"
-        }}
+            isLoadingNextStep={isLoadingNext}
+            i18nStrings={{
+                stepNumberLabel: stepNumber =>
+                    `Step ${stepNumber}`,
+                collapsedStepsLabel: (stepNumber, stepsCount) =>
+                    `Step ${stepNumber} of ${stepsCount}`,
+                skipToButtonLabel: (step, stepNumber) =>
+                    `Skip to ${step.title}`,
+                navigationAriaLabel: "Steps",
+                cancelButton: "Cancel",
+                previousButton: "Previous",
+                nextButton: "Next",
+                submitButton: "Submit for Generation",
+                optional: "optional"
+            }}
 
-        onCancel={() => {
-            setActiveStepIndex(0);
-            clearAllCanvas();
-        }}
+            onCancel={() => {
+                setActiveStepIndex(0);
+                clearAllCanvas();
+            }}
 
-        onNavigate={({ detail }) => {
-            if(detail.requestedStepIndex == 1){
-                console.log(detail.requestedStepIndex)
-                setActiveStepIndex(detail.requestedStepIndex);
-            }
-            else if (detail.requestedStepIndex == 2 && selectedImage == null) {
-                setShowalert(true)
-            } else {
-                if (detail.requestedStepIndex !== 1) {
-                    stopCameraStreaming()
+            onNavigate={({ detail }) => {
+                if (detail.requestedStepIndex == 1) {
+                    setActiveStepIndex(detail.requestedStepIndex);
                 }
-                setActiveStepIndex(detail.requestedStepIndex);
+                else if (detail.requestedStepIndex == 2) {
+                    if (selectedImage == null)
+                        setShowalert(true)
+                    else{
+                        submitPhoto(detail.requestedStepIndex)
+                    }
+                }else {
+                    setActiveStepIndex(detail.requestedStepIndex);
+                    stopCameraStreaming();
+                }
             }
-        }
-        }
-        activeStepIndex={activeStepIndex}
-        steps={[
-            {
-                title: "Select Id",
-                description: "",
-                content: (
-                    <Container fitHeight>
-                        <SpaceBetween size="l" alignItems="center">
-                            <Box color="text-body-secondary">Select an Id to proceed</Box>
-                        </SpaceBetween>
-                    </Container>
-                )
-            },
-            {
-                title: "Click a Photo",
-                description: "",
-                content: (
-                    <Container fitHeight>
-                        <SpaceBetween size="l" alignItems="center">
-                            <video id="camera-feed" playsInline></video>
-                            <SpaceBetween size="l" direction="horizontal">
-                                <Button variant="primary" onClick={() => { capturePhoto() }} disabled={(imagecount > 5)}>Take a Photo</Button>
-                                <Button iconName="refresh" onClick={() => { clearAllCanvas() }} disabled={(imagecount <= 1)}>Clear Photo(s)</Button>
+            }
+            activeStepIndex={activeStepIndex}
+            steps={[
+                {
+                    title: "Select Id",
+                    description: "",
+                    content: (
+                        <Container fitHeight>
+                            <SpaceBetween size="l" alignItems="center">
+                                <Box color="text-body-secondary">Select an Id to proceed</Box>
                             </SpaceBetween>
+                        </Container>
+                    )
+                },
+                {
+                    title: "Click a Photo",
+                    description: "",
+                    content: (
+                        <Container fitHeight>
+                            <SpaceBetween size="l" alignItems="center">
+                                <video id="camera-feed" playsInline></video>
+                                <SpaceBetween size="l" direction="horizontal">
+                                    <Button variant="primary" onClick={() => { capturePhoto() }} disabled={(imagecount > 5)}>Take a Photo</Button>
+                                    <Button iconName="refresh" onClick={() => { clearAllCanvas() }} disabled={(imagecount <= 1)}>Clear Photo(s)</Button>
+                                </SpaceBetween>
 
-                            <SpaceBetween direction="horizontal" size="xl">
-                                <canvas id="camera-canvas1" className="canvas-photo-hidden" onClick={(detail) => { selectCanvasImage(detail) }}></canvas>
-                                <canvas id="camera-canvas2" className="canvas-photo-hidden" onClick={(detail) => { selectCanvasImage(detail) }}></canvas>
-                                <canvas id="camera-canvas3" className="canvas-photo-hidden" onClick={(detail) => { selectCanvasImage(detail) }}></canvas>
-                                <canvas id="camera-canvas4" className="canvas-photo-hidden" onClick={(detail) => { selectCanvasImage(detail) }}></canvas>
-                                <canvas id="camera-canvas5" className="canvas-photo-hidden" onClick={(detail) => { selectCanvasImage(detail) }}></canvas>
-                            </SpaceBetween>
+                                <SpaceBetween direction="horizontal" size="xl">
+                                    <canvas id="camera-canvas1" className="canvas-photo-hidden" onClick={(detail) => { selectCanvasImage(detail) }}></canvas>
+                                    <canvas id="camera-canvas2" className="canvas-photo-hidden" onClick={(detail) => { selectCanvasImage(detail) }}></canvas>
+                                    <canvas id="camera-canvas3" className="canvas-photo-hidden" onClick={(detail) => { selectCanvasImage(detail) }}></canvas>
+                                    <canvas id="camera-canvas4" className="canvas-photo-hidden" onClick={(detail) => { selectCanvasImage(detail) }}></canvas>
+                                    <canvas id="camera-canvas5" className="canvas-photo-hidden" onClick={(detail) => { selectCanvasImage(detail) }}></canvas>
+                                </SpaceBetween>
 
-                            {
-                                (imagecount > 1) && (
-                                    <>
-                                    <Box color="text-body-secondary">Select a image to proceed</Box>
-                                    <Button onClick={() => callAI()}>Test</Button>
-                                    </>
-                                )
-                            }
-                            <Alert statusIconAriaLabel="Info" visible={showalert}> Select an image to proceed </Alert>
-                        </SpaceBetween>
-
-                    </Container>
-                )
-            },
-            {
-                title: "Choose Garment",
-                content: (
-                    <Container fitHeight>
-                        <SpaceBetween size="l" alignItems="center">
-                            <SegmentedControl selectedId={selectedId}
-                                onChange={({ detail }) =>
-                                    setSelectedId(detail.selectedId)
+                                {
+                                    (imagecount > 1) && <Box color="text-body-secondary">Select a image to proceed</Box>
                                 }
-                                label="Default segmented control"
-                                options={[
-                                    { text: "Male", id: "male" },
-                                    { text: "Female", id: "female" },
-                                ]}
-                            />
+                                <Alert statusIconAriaLabel="Info" visible={showalert}> Select an image to proceed </Alert>
+                            </SpaceBetween>
 
-                            <Cards
-                                ariaLabels={{
-                                    itemSelectionLabel: (e, t) => `select ${t.name}`,
-                                    selectionGroupLabel: "Item selection"
-                                }}
-                                cardDefinition={{
-                                    sections: [
-                                        {
-                                            id: "image_id",
-                                            content: item => (<img src={`./garments/${item.image_id}`} width="100%" />),
+                        </Container>
+                    )
+                },
+                {
+                    title: "Choose Garment",
+                    content: (
+                        <Container fitHeight>
+                            <SpaceBetween size="l" alignItems="center">
+                                <SegmentedControl selectedId={selectedGender}
+                                    label="Default segmented control"
+                                    options={[
+                                        { text: "Male", id: "male" },
+                                        { text: "Female", id: "female" , },
+                                    ]}
+                                />
 
-                                        },
-                                    ]
-                                }}
-                                cardsPerRow={[
-                                    { cards: 1 },
-                                    { minWidth: 300, cards: 3 }
-                                ]}
-                                items={garmentList.filter(e => e.gender == selectedId)}
-                                loadingText="Loading resources"
-                            />
-                        </SpaceBetween>
-                    </Container>
-                ),
-            }
-        ]}
-    />
+                                <Cards
+                                    ariaLabels={{
+                                        itemSelectionLabel: (e, t) => `select ${t.name}`,
+                                        selectionGroupLabel: "Item selection"
+                                    }}
+                                    cardDefinition={{
+                                        sections: [
+                                            {
+                                                id: "image_id",
+                                                content: item => (<img src={`./garments/${item.image_id}`} width="100%" />),
+
+                                            },
+                                        ]
+                                    }}
+                                    cardsPerRow={[
+                                        { cards: 1 },
+                                        { minWidth: 300, cards: 3 }
+                                    ]}
+                                    items={garmentList.filter(e => e.gender == selectedGender)}
+                                    loadingText="Loading resources"
+                                />
+                            </SpaceBetween>
+                        </Container>
+                    ),
+                }
+            ]}
+        />
     </Container>)
 }

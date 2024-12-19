@@ -7,7 +7,8 @@ export const dbApiFunction = defineFunction({
 
 export const aiApiFunction = defineFunction({
     name: "ai-api",
-    entry: "./aiHandler.ts"
+    entry: "./aiHandler.ts",
+    timeoutSeconds: 360
 })
 
 export const confyApiFunction = defineFunction({

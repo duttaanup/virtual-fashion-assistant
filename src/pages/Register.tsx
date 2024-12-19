@@ -6,7 +6,6 @@ export default function Register() {
     useEffect(() => {
         AppApi.dbOperation();
         AppApi.confyOperation();
-        AppApi.aiOperation()
     }, [])
     return (
         <Container fitHeight header={

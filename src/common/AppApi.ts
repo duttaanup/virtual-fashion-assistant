@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { get } from 'aws-amplify/api';
+import { get, post } from 'aws-amplify/api';
 import { fetchAuthSession } from 'aws-amplify/auth'
 
 const API_NAME = "vfaAPI";
@@ -28,21 +28,24 @@ export const AppApi = {
         }
     },
 
-    aiOperation: async () => {
+    aiOperation: async (imageData) => {
         try {
             const session = await fetchAuthSession();
             const token = session.tokens?.idToken
-            const restOperation = get({
+            const restOperation = post({
                 apiName: API_NAME,
                 path: AI_PATH,
                 options: {
                     headers: {
                         Authorization: token
-                    }
+                    },
+                    body: { "image": imageData.replace("data:image/png;base64,","") },
                 }
             });
-            const response = await restOperation.response;
+            const { body } = await restOperation.response;
+            const response = await body.json();
             console.log('GET call succeeded: ', response);
+            return response;
         } catch (error) {
             console.log('GET call failed: ', JSON.parse(error.response.body));
         }

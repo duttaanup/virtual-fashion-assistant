@@ -33,7 +33,19 @@ const cognitoAuth = new CognitoUserPoolsAuthorizer(apiStack, "CognitoAuth", {
     cognitoUserPools: [backend.auth.resources.userPool],
 });
 
+const bedrockPolicy = new PolicyStatement({
+    actions: ["bedrock:*"],
+    resources: ["*"],
+});
+
 const dblambdaIntegration = new LambdaIntegration(backend.dbApiFunction.resources.lambda);
+
+backend.aiApiFunction.resources.lambda.role?.attachInlinePolicy(
+    new Policy(apiStack, "BedrockPolicy", {
+        statements: [bedrockPolicy],
+    })
+);
+
 const ailambdaIntegration = new LambdaIntegration(backend.aiApiFunction.resources.lambda);
 const confylambdaIntegration = new LambdaIntegration(backend.confyApiFunction.resources.lambda);
 
@@ -44,7 +56,6 @@ dbPath.addMethod("GET", dblambdaIntegration, authConfig);
 dbPath.addMethod("POST", dblambdaIntegration, authConfig);
 
 const aiPath = vfaAPI.root.addResource("ai");
-aiPath.addMethod("GET", ailambdaIntegration, authConfig);
 aiPath.addMethod("POST", ailambdaIntegration, authConfig);
 
 const confyPath = vfaAPI.root.addResource("confy");
