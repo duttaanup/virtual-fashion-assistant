@@ -94,9 +94,9 @@ export default function Fashion() {
         const output = JSON.parse(result);
         setGender(output)
         setSelectedGender(output.gender)
-        setActiveStepIndex(nextStep);
         setIsLoadingNext(false);
         stopCameraStreaming()
+        setActiveStepIndex(nextStep);
     }
 
     useEffect(() => {
@@ -146,8 +146,8 @@ export default function Fashion() {
                         submitPhoto(detail.requestedStepIndex)
                     }
                 }else {
-                    setActiveStepIndex(detail.requestedStepIndex);
                     stopCameraStreaming();
+                    setActiveStepIndex(detail.requestedStepIndex);   
                 }
             }
             }
