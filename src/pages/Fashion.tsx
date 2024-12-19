@@ -2,6 +2,7 @@
 import { Alert, Box, BreadcrumbGroup, Button, Cards, Container, SegmentedControl, SpaceBetween, Wizard } from "@cloudscape-design/components";
 import { useEffect, useState } from "react";
 import { garmentList } from "../common";
+import { AppApi } from "../common/AppApi";
 
 export default function Fashion() {
     const [activeStepIndex, setActiveStepIndex] = useState(0);
@@ -35,6 +36,11 @@ export default function Fashion() {
         }
     }
 
+    const callAI = async () => {
+        console.log(selectedImage);
+        const response = await AppApi.makeAICall(selectedImage);
+        console.log(response);
+    }
     const clearAllCanvas = () => {
         for (let i = 1; i <= 5; i++) {
             const canvas = document.getElementById(`camera-canvas${i}`);
@@ -122,6 +128,7 @@ export default function Fashion() {
         onNavigate={({ detail }) => {
             if(detail.requestedStepIndex == 1){
                 console.log(detail.requestedStepIndex)
+                setActiveStepIndex(detail.requestedStepIndex);
             }
             else if (detail.requestedStepIndex == 2 && selectedImage == null) {
                 setShowalert(true)
@@ -168,7 +175,10 @@ export default function Fashion() {
 
                             {
                                 (imagecount > 1) && (
+                                    <>
                                     <Box color="text-body-secondary">Select a image to proceed</Box>
+                                    <Button onClick={() => callAI()}>Test</Button>
+                                    </>
                                 )
                             }
                             <Alert statusIconAriaLabel="Info" visible={showalert}> Select an image to proceed </Alert>

@@ -1,6 +1,13 @@
 import { BreadcrumbGroup, Button, CollectionPreferences, Container, Header, Pagination, SpaceBetween, Table, TextFilter } from "@cloudscape-design/components";
+import { AppApi } from "../common/AppApi";
+import { useEffect } from "react";
 
 export default function Register() {
+    useEffect(() => {
+        AppApi.dbOperation();
+        AppApi.confyOperation();
+        AppApi.aiOperation()
+    }, [])
     return (
         <Container fitHeight header={
             <BreadcrumbGroup 

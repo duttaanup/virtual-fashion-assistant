@@ -9,15 +9,15 @@ import {
     RestApi,
 } from "aws-cdk-lib/aws-apigateway";
 import { Policy, PolicyStatement } from "aws-cdk-lib/aws-iam";
-import { myApiFunction } from "./functions/api-function/resource";
+import { dbApiFunction , aiApiFunction , confyApiFunction } from "./functions/api-function/resource";
 
 const backend = defineBackend({
-    auth, myApiFunction
+ auth, dbApiFunction, aiApiFunction , confyApiFunction 
 });
 
-const apiStack = backend.createStack("api-stack");
-const myRestApi = new RestApi(apiStack, "RestApi", {
-    restApiName: "myRestApi",
+const apiStack = backend.createStack("vfa-api-stack");
+const vfaAPI = new RestApi(apiStack, "vfaAPI", {
+    restApiName: "vfaAPI",
     deploy: true,
     deployOptions: {
         stageName: "dev",
@@ -29,36 +29,27 @@ const myRestApi = new RestApi(apiStack, "RestApi", {
     },
 });
 
-const lambdaIntegration = new LambdaIntegration(
-    backend.myApiFunction.resources.lambda
-);
-
-const itemsPath = myRestApi.root.addResource("items", {
-    defaultMethodOptions: {
-        authorizationType: AuthorizationType.IAM,
-    },
-});
-
-itemsPath.addMethod("GET", lambdaIntegration);
-itemsPath.addMethod("POST", lambdaIntegration);
-itemsPath.addMethod("DELETE", lambdaIntegration);
-itemsPath.addMethod("PUT", lambdaIntegration);
-
-itemsPath.addProxy({
-    anyMethod: true,
-    defaultIntegration: lambdaIntegration,
-});
-
-
 const cognitoAuth = new CognitoUserPoolsAuthorizer(apiStack, "CognitoAuth", {
     cognitoUserPools: [backend.auth.resources.userPool],
 });
 
-const booksPath = myRestApi.root.addResource("cognito-auth-path");
-booksPath.addMethod("GET", lambdaIntegration, {
-    authorizationType: AuthorizationType.COGNITO,
-    authorizer: cognitoAuth,
-});
+const dblambdaIntegration = new LambdaIntegration(backend.dbApiFunction.resources.lambda);
+const ailambdaIntegration = new LambdaIntegration(backend.aiApiFunction.resources.lambda);
+const confylambdaIntegration = new LambdaIntegration(backend.confyApiFunction.resources.lambda);
+
+
+const authConfig = { authorizationType: AuthorizationType.COGNITO,authorizer: cognitoAuth}
+const dbPath = vfaAPI.root.addResource("db");
+dbPath.addMethod("GET", dblambdaIntegration, authConfig);
+dbPath.addMethod("POST", dblambdaIntegration, authConfig);
+
+const aiPath = vfaAPI.root.addResource("ai");
+aiPath.addMethod("GET", ailambdaIntegration, authConfig);
+aiPath.addMethod("POST", ailambdaIntegration, authConfig);
+
+const confyPath = vfaAPI.root.addResource("confy");
+confyPath.addMethod("GET", confylambdaIntegration, authConfig);
+confyPath.addMethod("POST", confylambdaIntegration, authConfig);
 
 
 const apiRestPolicy = new Policy(apiStack, "RestApiPolicy", {
@@ -66,9 +57,9 @@ const apiRestPolicy = new Policy(apiStack, "RestApiPolicy", {
         new PolicyStatement({
             actions: ["execute-api:Invoke"],
             resources: [
-                `${myRestApi.arnForExecuteApi("*", "/items", "dev")}`,
-                `${myRestApi.arnForExecuteApi("*", "/items/*", "dev")}`,
-                `${myRestApi.arnForExecuteApi("*", "/cognito-auth-path", "dev")}`,
+                `${vfaAPI.arnForExecuteApi("*", "/ai", "dev")}`,
+                `${vfaAPI.arnForExecuteApi("*", "/confy", "dev")}`,
+                `${vfaAPI.arnForExecuteApi("*", "/db", "dev")}`,
             ],
         }),
     ],
@@ -84,10 +75,10 @@ backend.auth.resources.unauthenticatedUserIamRole.attachInlinePolicy(
 backend.addOutput({
     custom: {
         API: {
-            [myRestApi.restApiName]: {
-                endpoint: myRestApi.url,
-                region: Stack.of(myRestApi).region,
-                apiName: myRestApi.restApiName,
+            [vfaAPI.restApiName]: {
+                endpoint: vfaAPI.url,
+                region: Stack.of(vfaAPI).region,
+                apiName: vfaAPI.restApiName,
             },
         },
     },
