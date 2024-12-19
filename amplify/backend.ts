@@ -1,5 +1,5 @@
 import { defineBackend } from '@aws-amplify/backend';
-import { Stack } from "aws-cdk-lib";
+import { aws_dynamodb, RemovalPolicy, Stack } from "aws-cdk-lib";
 import { auth } from "./auth/resource";
 import {
     AuthorizationType,
@@ -16,6 +16,8 @@ const backend = defineBackend({
 });
 
 const apiStack = backend.createStack("vfa-api-stack");
+const dbStack = backend.createStack("vfa-db-stack");
+
 const vfaAPI = new RestApi(apiStack, "vfaAPI", {
     restApiName: "vfaAPI",
     deploy: true,
@@ -29,6 +31,13 @@ const vfaAPI = new RestApi(apiStack, "vfaAPI", {
     },
 });
 
+// Create DynamoDB for User Registration using cdk stack
+const userRegistrationTable = new aws_dynamodb.Table(dbStack, "UserRegistration", {
+    partitionKey: { name: "email", type: aws_dynamodb.AttributeType.STRING },
+    billingMode: aws_dynamodb.BillingMode.PAY_PER_REQUEST,
+    removalPolicy:  RemovalPolicy.DESTROY
+});
+
 const cognitoAuth = new CognitoUserPoolsAuthorizer(apiStack, "CognitoAuth", {
     cognitoUserPools: [backend.auth.resources.userPool],
 });
@@ -38,19 +47,21 @@ const bedrockPolicy = new PolicyStatement({
     resources: ["*"],
 });
 
-const dblambdaIntegration = new LambdaIntegration(backend.dbApiFunction.resources.lambda);
-
 backend.aiApiFunction.resources.lambda.role?.attachInlinePolicy(
     new Policy(apiStack, "BedrockPolicy", {
         statements: [bedrockPolicy],
     })
 );
 
+// add dynamodb access
+userRegistrationTable.grantReadWriteData(backend.dbApiFunction.resources.lambda);
+
+const dblambdaIntegration = new LambdaIntegration(backend.dbApiFunction.resources.lambda);
 const ailambdaIntegration = new LambdaIntegration(backend.aiApiFunction.resources.lambda);
 const confylambdaIntegration = new LambdaIntegration(backend.confyApiFunction.resources.lambda);
 
-
 const authConfig = { authorizationType: AuthorizationType.COGNITO,authorizer: cognitoAuth}
+
 const dbPath = vfaAPI.root.addResource("db");
 dbPath.addMethod("GET", dblambdaIntegration, authConfig);
 dbPath.addMethod("POST", dblambdaIntegration, authConfig);
@@ -61,7 +72,6 @@ aiPath.addMethod("POST", ailambdaIntegration, authConfig);
 const confyPath = vfaAPI.root.addResource("confy");
 confyPath.addMethod("GET", confylambdaIntegration, authConfig);
 confyPath.addMethod("POST", confylambdaIntegration, authConfig);
-
 
 const apiRestPolicy = new Policy(apiStack, "RestApiPolicy", {
     statements: [
@@ -82,6 +92,8 @@ backend.auth.resources.authenticatedUserIamRole.attachInlinePolicy(
 backend.auth.resources.unauthenticatedUserIamRole.attachInlinePolicy(
     apiRestPolicy
 );
+
+backend.dbApiFunction.addEnvironment("USER_REGISTRATION_TABLE", userRegistrationTable.tableName);
 
 backend.addOutput({
     custom: {

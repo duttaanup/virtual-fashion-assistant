@@ -8,7 +8,7 @@ const AI_PATH = "ai";
 const CONFY_PATH = "confy";
 
 export const AppApi = {
-    dbOperation: async () => {
+    dbGetOperation: async () => {
         try {
             const session = await fetchAuthSession();
             const token = session.tokens?.idToken  
@@ -21,10 +21,33 @@ export const AppApi = {
                     }
                 }
             });
-            const response = await restOperation.response;
-            console.log('GET call succeeded: ', response);
+            const { body } = await restOperation.response;
+            const response = await body.json();
+            return response;
         } catch (error) {
-            console.log('GET call failed: ', JSON.parse(error.response.body));
+            console.log('GET call failed: ', error);
+        }
+    },
+
+    dbPostOperation: async (payload) => {
+        try {
+            const session = await fetchAuthSession();
+            const token = session.tokens?.idToken  
+            const restOperation = post({
+                apiName: API_NAME,
+                path: DB_PATH,
+                options: {
+                    headers: {
+                        Authorization: token
+                    },
+                    body : payload
+                }
+            });
+            const { body } = await restOperation.response;
+            const response = await body.json();
+            return response;
+        } catch (error) {
+            console.log('GET call failed: ', error);
         }
     },
 
