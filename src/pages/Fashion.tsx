@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { garmentList } from "../common";
 import { AppApi } from "../common/AppApi";
 
+let VIDEO_STREAM = null;
+
 export default function Fashion() {
     const [activeStepIndex, setActiveStepIndex] = useState(0);
     const [imagecount, setImagecount] = useState(1);
@@ -17,7 +19,8 @@ export default function Fashion() {
         const video = document.getElementById('camera-feed');
         navigator.mediaDevices.getUserMedia({ video: true })
             .then((stream) => {
-                video.srcObject = stream;
+                VIDEO_STREAM = stream
+                video.srcObject = VIDEO_STREAM;
                 video.play();
             })
             .catch((err) => {
@@ -29,27 +32,36 @@ export default function Fashion() {
     }
 
     const stopCameraStreaming = () => {
-        const video = document.getElementById('camera-feed');
-        const stream = video.srcObject;
-        if (stream) {
-            const tracks = stream.getTracks();
-            tracks.forEach((track) => track.stop());
-            video.srcObject = null;
+        try {
+            if (VIDEO_STREAM) {
+                const tracks = VIDEO_STREAM.getTracks();
+                tracks.forEach((track) => track.stop());
+            }
+        } catch (e) {
+            console.log(e)
         }
     }
 
     const clearAllCanvas = () => {
         for (let i = 1; i <= 5; i++) {
-            const canvas = document.getElementById(`camera-canvas${i}`);
-            const context = canvas.getContext('2d');
-            context.clearRect(0, 0, canvas.width, canvas.height);
-            canvas.classList.remove("canvas-photo-selected");
-            canvas.classList.remove("canvas-photo");
-            canvas.classList.add("canvas-photo-hidden");
+            try {
+                const canvas = document.getElementById(`camera-canvas${i}`);
+                const context = canvas.getContext('2d');
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                canvas.classList.remove("canvas-photo-selected");
+                canvas.classList.remove("canvas-photo");
+                canvas.classList.add("canvas-photo-hidden");
+            } catch (e) {
+                console.log(e)
+            }
+
         }
         setImagecount(1);
         setSelectedimage(null);
         setShowalert(false);
+        selectedGender(null);
+        setGender(null);
+        setIsLoadingNext(false);
     }
 
     const capturePhoto = () => {
@@ -90,7 +102,7 @@ export default function Fashion() {
         setIsLoadingNext(true);
         const ai_response = await AppApi.aiOperation(selectedImage);
         const model_response = ai_response.response.output.message.content[0]
-        const result = model_response.text.replace(/\n/g, "").replace("json","").replace(/`/g,"");
+        const result = model_response.text.replace(/\n/g, "").replace("json", "").replace(/`/g, "");
         const output = JSON.parse(result);
         setGender(output)
         setSelectedGender(output.gender)
@@ -103,6 +115,12 @@ export default function Fashion() {
         setImagecount(1);
         if (activeStepIndex == 1)
             initializeCamera()
+        else
+            stopCameraStreaming()
+
+        return () => {
+            stopCameraStreaming()
+        }
     }, [activeStepIndex])
 
     return (<Container fitHeight header={
@@ -142,12 +160,12 @@ export default function Fashion() {
                 else if (detail.requestedStepIndex == 2) {
                     if (selectedImage == null)
                         setShowalert(true)
-                    else{
+                    else {
                         submitPhoto(detail.requestedStepIndex)
                     }
-                }else {
+                } else {
                     stopCameraStreaming();
-                    setActiveStepIndex(detail.requestedStepIndex);   
+                    setActiveStepIndex(detail.requestedStepIndex);
                 }
             }
             }
@@ -202,10 +220,10 @@ export default function Fashion() {
                                     label="Default segmented control"
                                     options={[
                                         { text: "Male", id: "male" },
-                                        { text: "Female", id: "female" , },
+                                        { text: "Female", id: "female", },
                                     ]}
                                 />
-
+                                <pre>{JSON.stringify(gender)}</pre>
                                 <Cards
                                     ariaLabels={{
                                         itemSelectionLabel: (e, t) => `select ${t.name}`,
