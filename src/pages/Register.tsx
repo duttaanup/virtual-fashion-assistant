@@ -45,12 +45,15 @@ export default function Register() {
         if (useremail) {
             const userId = AppUtility.guid()
             await AppApi.dbPostOperation({
-                "email": useremail,
-                "user_id": userId,
-                "process_state": "Registered",
-                "selected_image": "",
-                "create_on": new Date().toISOString(),
-                "update_on": new Date().toISOString(),
+                "action": "ADD_USER",
+                "data": {
+                    "email": useremail,
+                    "user_id": userId,
+                    "process_state": "Registered",
+                    "selected_image": "",
+                    "create_on": new Date().toISOString(),
+                    "update_on": new Date().toISOString(),
+                }
             });
             const userList = await AppApi.dbGetOperation();
             setUserList(userList)

@@ -53,6 +53,14 @@ backend.aiApiFunction.resources.lambda.role?.attachInlinePolicy(
     })
 );
 
+// add permission for email
+backend.dbApiFunction.resources.lambda.addToRolePolicy(
+    new PolicyStatement({
+        actions: ["ses:SendEmail"],
+        resources: ["*"],
+    })
+);
+
 // add dynamodb access
 userRegistrationTable.grantReadWriteData(backend.dbApiFunction.resources.lambda);
 

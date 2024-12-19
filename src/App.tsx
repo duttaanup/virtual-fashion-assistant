@@ -8,7 +8,7 @@ const Router = HashRouter;
 
 export default function App() {
   return (
-    <Authenticator>
+    <Authenticator hideSignUp={true}>
       {({ signOut, user }) => (
         <>
           <div id="custom-main-header">

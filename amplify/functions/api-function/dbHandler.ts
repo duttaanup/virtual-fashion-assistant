@@ -1,53 +1,67 @@
 //@ts-nocheck
 import type { APIGatewayProxyHandler } from "aws-lambda";
-import { DynamoDB } from "aws-sdk";
+import { DynamoDB, SES } from "aws-sdk";
 
 const header = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Credentials": true,
 };
 
-// Get table name from environment variables
 const USER_REGISTRATION_TABLE = process.env.USER_REGISTRATION_TABLE;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   console.log("event", event);
-  // Handle GET and POST requests
   if (event.httpMethod === "GET") {
-    // Get all items from dynamodb table
     const dynamodb = new DynamoDB.DocumentClient();
     const params = {
       TableName: USER_REGISTRATION_TABLE,
     };
     const data = await dynamodb.scan(params).promise();
-    console.log("data", data)
     return {
       statusCode: 200,
-      // Modify the CORS settings below to match your specific requirements
       headers: header,
       body: JSON.stringify(data.Items),
     };
   } else if (event.httpMethod === "POST") {
-    // Save item to dynamodb table
-    const dynamodb = new DynamoDB.DocumentClient();
-    const params = {
-      TableName: USER_REGISTRATION_TABLE,
-      Item: JSON.parse(event.body),
-    };
-    await dynamodb.put(params).promise();
+    const body = JSON.parse(event.body);
+    if (body.action == "ADD_USER") {
+      const dynamodb = new DynamoDB.DocumentClient();
+      const params = {
+        TableName: USER_REGISTRATION_TABLE,
+        Item: body.data,
+      };
+      await dynamodb.put(params).promise();
+      // Send email to user
+      const ses = new SES();
+      const emailParams = {
+        Destination: {
+          ToAddresses: [body.data.email],
+        },
+        Message: {
+          Body: {
+            Text: {
+              Data: "Thank you for registering for the Virtual Fashion Assistant. We will send you an email when the product is ready.",
+            },
+          },
+          Subject: {
+            Data: "Virtual Fashion Assistant Registration",
+          },
+        },
+        Source: "no-reply@mysampledemo.site",
+      };
+      await ses.sendEmail(emailParams).promise();
+    }
     return {
       statusCode: 200,
-      // Modify the CORS settings below to match your specific requirements
       headers: header,
-      body: JSON.stringify("Hello from db functions!"),
+      body: JSON.stringify("Success"),
     };
-  }else{
+  } else {
     return {
       statusCode: 400,
-      // Modify the CORS settings below to match your specific requirements
       headers: header,
       body: JSON.stringify("Invalid Request"),
     };
   }
-  
+
 };

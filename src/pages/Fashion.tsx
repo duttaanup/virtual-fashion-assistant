@@ -114,12 +114,15 @@ export default function Fashion() {
             setIsLoadingNext(true);
             const userId = AppUtility.guid()
             const newUser = {
-                "email": inputValue,
-                "user_id": userId,
-                "process_state": "Registered",
-                "selected_image": "",
-                "create_on": new Date().toISOString(),
-                "update_on": new Date().toISOString(),
+                "action": "ADD_USER",
+                "data": {
+                    "email": inputValue,
+                    "user_id": userId,
+                    "process_state": "Registered",
+                    "selected_image": "",
+                    "create_on": new Date().toISOString(),
+                    "update_on": new Date().toISOString(),
+                }
             }
             await AppApi.dbPostOperation(newUser);
             setUser(newUser)

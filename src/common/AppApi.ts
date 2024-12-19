@@ -28,7 +28,6 @@ export const AppApi = {
             console.log('GET call failed: ', error);
         }
     },
-
     dbPostOperation: async (payload) => {
         try {
             const session = await fetchAuthSession();
@@ -50,7 +49,6 @@ export const AppApi = {
             console.log('GET call failed: ', error);
         }
     },
-
     aiOperation: async (imageData) => {
         try {
             const session = await fetchAuthSession();
@@ -72,7 +70,6 @@ export const AppApi = {
             console.log('GET call failed: ', JSON.parse(error.response.body));
         }
     },
-
     confyOperation: async () => {
         try {
             const session = await fetchAuthSession();
@@ -92,5 +89,4 @@ export const AppApi = {
             console.log('GET call failed: ', JSON.parse(error.response.body));
         }
     }
-
 }
