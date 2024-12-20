@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { Alert, Box, BreadcrumbGroup, Button, Cards, Container, FormField, Header, Input, SegmentedControl, SpaceBetween, Wizard } from "@cloudscape-design/components";
+import { Alert, Box, BreadcrumbGroup, Button, Cards, Container, FormField, Input, SegmentedControl, SpaceBetween, Wizard } from "@cloudscape-design/components";
 import { useEffect, useState } from "react";
 import { garmentList } from "../common";
 import { AppApi } from "../common/AppApi";
@@ -15,6 +15,7 @@ export default function Fashion() {
     const [imagecount, setImagecount] = useState(1);
     const [showalert, setShowalert] = useState(false);
     const [selectedImage, setSelectedimage] = useState(null);
+    const [selectedImageBase64, setSelectedImageBase64] = useState(null);
     const [selectedGender, setSelectedGender] = useState(null);
     const [gender, setGender] = useState(null);
     const [isLoadingNext, setIsLoadingNext] = useState(false);
@@ -24,8 +25,15 @@ export default function Fashion() {
         navigator.mediaDevices.getUserMedia({ video: true })
             .then((stream) => {
                 VIDEO_STREAM = stream
+                const track = VIDEO_STREAM.getVideoTracks()[0];
+                const imageCapture = new ImageCapture(track);
+                const imgBlob = imageCapture.takePhoto();
                 video.srcObject = VIDEO_STREAM;
-                video.play();
+                imgBlob.then((blob) => {
+                    console.log(blob, "Camera ready")
+                    video.play();
+                })
+                
             })
             .catch((err) => {
                 console.error('Error accessing camera:', err);
@@ -33,6 +41,7 @@ export default function Fashion() {
         setImagecount(1);
         setSelectedimage(null);
         setShowalert(false);
+        setSelectedGender(null)
     }
     const stopCameraStreaming = () => {
         try {
@@ -53,6 +62,9 @@ export default function Fashion() {
                 canvas.classList.remove("canvas-photo-selected");
                 canvas.classList.remove("canvas-photo");
                 canvas.classList.add("canvas-photo-hidden");
+
+                const img = document.getElementById(`camera-img-${i}`);
+                img.src = "";
             } catch (e) {
                 console.log(e)
             }
@@ -60,25 +72,36 @@ export default function Fashion() {
         }
         setImagecount(1);
         setSelectedimage(null);
-        setShowalert(false);
-        selectedGender(null);
+        setShowalert(false);;
         setGender(null);
         setIsLoadingNext(false);
     }
-    const capturePhoto = () => {
+    const capturePhoto = async () => {
         let counter = imagecount;
         const video = document.getElementById('camera-feed');
         const canvas = document.getElementById(`camera-canvas${counter}`);
+        const img = document.getElementById(`camera-img-${counter}`);
+
         const context = canvas.getContext('2d');
         canvas.classList.remove("canvas-photo-hidden");
         canvas.classList.add("canvas-photo");
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const track = VIDEO_STREAM.getVideoTracks()[0];
+        const imageCapture = new ImageCapture(track);
+        const imgBlob = await imageCapture.takePhoto();
+        
+        img.src = await AppUtility.blobToBase64(imgBlob);
+
         counter++;
         setImagecount(counter);
         setShowalert(false);
     }
     const selectCanvasImage = (detail) => {
         const canvas = document.getElementById(detail.target.id);
+        const number = detail.target.id.match(/\d+/)[0];
+        const img = document.getElementById(`camera-img-${number}`)
+        setSelectedImageBase64(img.src)
         const dataUrl = canvas.toDataURL();
         // reset all canvas css
         for (let i = 1; i <= 5; i++) {
@@ -106,9 +129,10 @@ export default function Fashion() {
         const output = JSON.parse(result);
         setGender(output)
         setSelectedGender(output.gender)
+        console.log(selectedImageBase64)
         const file_upload_result = await uploadData({
             path: `raw/${user.user_id}/${AppUtility.fileName()}`,
-            data: AppUtility.base64ToBlob(selectedImage, 'image/png'),
+            data: AppUtility.dataURLtoBlob(selectedImageBase64),
         });
         setIsLoadingNext(false);
         stopCameraStreaming()
@@ -239,6 +263,13 @@ export default function Fashion() {
                                     <canvas id="camera-canvas3" className="canvas-photo-hidden" onClick={(detail) => { selectCanvasImage(detail) }}></canvas>
                                     <canvas id="camera-canvas4" className="canvas-photo-hidden" onClick={(detail) => { selectCanvasImage(detail) }}></canvas>
                                     <canvas id="camera-canvas5" className="canvas-photo-hidden" onClick={(detail) => { selectCanvasImage(detail) }}></canvas>
+                                </SpaceBetween>
+                                <SpaceBetween direction="horizontal" size="xl">
+                                    <img id="camera-img-1" className="camera-img"/>
+                                    <img id="camera-img-2" className="camera-img"/>
+                                    <img id="camera-img-3" className="camera-img"/>
+                                    <img id="camera-img-4" className="camera-img"/>
+                                    <img id="camera-img-5" className="camera-img"/>
                                 </SpaceBetween>
 
                                 {

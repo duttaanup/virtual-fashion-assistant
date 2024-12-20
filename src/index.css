@@ -11,6 +11,10 @@
   height: auto;
   object-fit: contain;
 }
+.camera-img{
+  height: 1px;
+  visibility: hidden;
+}
 
 .canvas-photo {
   visibility: visible;

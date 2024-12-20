@@ -10,7 +10,7 @@ export const AppUtility = {
     },
 
     fileName : () => {
-        return `${AppUtility.guid()}.png`;
+        return `${AppUtility.guid()}.jpeg`;
     },
 
     // ISO date sting to local time
@@ -26,7 +26,34 @@ export const AppUtility = {
         for (let i = 0; i < byteCharacters.length; i++) {
             byteNumbers[i] = byteCharacters.charCodeAt(i); // Convert characters to byte numbers
         }
-        
         return new Blob([byteNumbers], { type: contentType }); // Create Blob
+    },
+
+    blobToBase64: (blob: Blob) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                resolve(reader.result);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    },
+
+    dataURLtoBlob(dataURL) {
+        // Split the Data URL into the header and the base64 data
+        const arr = dataURL.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1]; // Extract the MIME type
+        const bstr = atob(arr[1]); // Decode the base64 string
+        const n = bstr.length;
+        const u8arr = new Uint8Array(n);
+    
+        // Create a byte array from the decoded string
+        for (let i = 0; i < n; i++) {
+            u8arr[i] = bstr.charCodeAt(i);
+        }
+    
+        // Create and return a Blob object
+        return new Blob([u8arr], { type: mime });
     }
 }
