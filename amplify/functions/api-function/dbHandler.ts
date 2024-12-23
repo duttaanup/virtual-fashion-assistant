@@ -88,8 +88,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           },
           ExpressionAttributeValues: {
             ":process_state": body.data.process_state,
-            ":selected_garment": body.data.processed_image,
-            ":update_on": body.data.selected_garment
+            ":selected_garment": body.data.selected_garment,
+            ":update_on": body.data.update_on
           },
           ReturnValues: "ALL_NEW",
         };

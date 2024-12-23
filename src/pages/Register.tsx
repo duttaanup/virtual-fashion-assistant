@@ -194,7 +194,7 @@ export default function Register() {
         <Modal visible={isGarmentVisible} onDismiss={() => {
             setIsGarmentVisible(false)
         }}>
-            <img src={userSelectedGarment}/>
+            <img width="100%" src={`./garments/${userSelectedGarment}`}/>
         </Modal>
 
         </Container>
