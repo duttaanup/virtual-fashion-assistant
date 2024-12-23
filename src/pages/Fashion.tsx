@@ -187,6 +187,41 @@ export default function Fashion() {
             setActiveStepIndex(detail.requestedStepIndex);
         }
     }
+
+    const resetAll = () => {
+        setActiveStepIndex(0);
+        setInputValue("");
+        setUser(null);
+        setImagecount(1);
+        setShowalert(false);
+        setSelectedimage(null);
+        setSelectedImageBase64(null);
+        setSelectedGender(null)
+        setGender(null);
+        setIsLoadingNext(false);
+        setSelectedItems([]);
+    }
+
+    const onSetupSubmition = async () =>{
+        if (selectedItems.length > 0) {
+            setIsLoadingNext(true)
+            console.log(user, selectedItems)
+            let tempUser = user;
+            tempUser.selected_garment = selectedItems[0].image_id;
+            tempUser.process_state = UserState.GarmentSelected;
+            tempUser.update_on = new Date().toISOString();
+            AppApi.dbPostOperation({
+                "action": "UPDATE_USER",
+                "action_type": "SELECTED_USER_GARMENT",
+                "data": tempUser
+            })
+            await AppApi.confyOperation()
+            alert("Thank you. Will send details over mail once completed")
+            resetAll();
+        } else {
+            alert("Please select at least one garment.");
+        }
+    }
     useEffect(() => {
         setImagecount(1);
         if (activeStepIndex == 1)
@@ -223,34 +258,12 @@ export default function Fashion() {
                 submitButton: "Submit for Generation",
                 optional: "optional"
             }}
-
             onCancel={() => {
-                setActiveStepIndex(0);
+                resetAll();
                 clearAllCanvas();
             }}
-
             onNavigate={({ detail }) => { controlNavigation(detail) }}
-
-            onSubmit={() => {
-                if (selectedItems.length > 0) {
-                    console.log(user, selectedItems)
-                    let tempUser = user;
-                    tempUser.selected_garment = selectedItems[0].image_id;
-                    tempUser.process_state = UserState.GarmentSelected;
-                    tempUser.update_on = new Date().toISOString();
-                    AppApi.dbPostOperation({
-                        "action": "UPDATE_USER",
-                        "action_type": "SELECTED_USER_GARMENT",
-                        "data": tempUser
-                    })
-                    setUser(tempUser);
-                    alert("Thank you. Will send details over mail once completed")
-                    setActiveStepIndex(0);
-                } else {
-                    alert("Please select at least one garment.");
-                }
-            }}
-
+            onSubmit={() => {onSetupSubmition()}}
             activeStepIndex={activeStepIndex}
             steps={[
                 {
@@ -340,7 +353,6 @@ export default function Fashion() {
                                             {
                                                 id: "image_id",
                                                 content: item => (<img src={`./garments/${item.image_id}`} width="100%" />),
-
                                             },
                                         ]
                                     }}
