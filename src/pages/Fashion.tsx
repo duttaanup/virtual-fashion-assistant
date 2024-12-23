@@ -32,13 +32,15 @@ export default function Fashion() {
                     const imgBlob = imageCapture.takePhoto();
                     imgBlob.then(() => {
                         console.log("Camera ready")
+                        video.srcObject = VIDEO_STREAM;
+                        video.play();
                     })
                 } else {
                     console.log("ImageCapture API not supported")
-
+                    video.srcObject = VIDEO_STREAM;
+                    video.play();
                 }
-                video.srcObject = VIDEO_STREAM;
-                video.play();
+                
             })
             .catch((err) => {
                 console.error('Error accessing camera:', err);
