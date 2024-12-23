@@ -3,7 +3,7 @@ import { Alert, Box, BreadcrumbGroup, Button, Cards, Container, FormField, Input
 import { useEffect, useState } from "react";
 import { garmentList } from "../common";
 import { AppApi } from "../common/AppApi";
-import { AppUtility } from "../common/Util";
+import { AppUtility, UserState } from "../common/Util";
 import { uploadData } from 'aws-amplify/storage';
 
 let VIDEO_STREAM = null;
@@ -19,6 +19,7 @@ export default function Fashion() {
     const [selectedGender, setSelectedGender] = useState(null);
     const [gender, setGender] = useState(null);
     const [isLoadingNext, setIsLoadingNext] = useState(false);
+    const [selectedItems, setSelectedItems] = useState([]);
 
     const initializeCamera = () => {
         const video = document.getElementById('camera-feed');
@@ -29,11 +30,11 @@ export default function Fashion() {
                 const imageCapture = new ImageCapture(track);
                 const imgBlob = imageCapture.takePhoto();
                 video.srcObject = VIDEO_STREAM;
-                imgBlob.then((blob) => {
-                    console.log(blob, "Camera ready")
+                imgBlob.then(() => {
+                    console.log("Camera ready")
                     video.play();
                 })
-                
+
             })
             .catch((err) => {
                 console.error('Error accessing camera:', err);
@@ -90,7 +91,7 @@ export default function Fashion() {
         const track = VIDEO_STREAM.getVideoTracks()[0];
         const imageCapture = new ImageCapture(track);
         const imgBlob = await imageCapture.takePhoto();
-        
+
         img.src = await AppUtility.blobToBase64(imgBlob);
 
         counter++;
@@ -129,11 +130,27 @@ export default function Fashion() {
         const output = JSON.parse(result);
         setGender(output)
         setSelectedGender(output.gender)
-        console.log(selectedImageBase64)
-        const file_upload_result = await uploadData({
-            path: `raw/${user.user_id}/${AppUtility.fileName()}`,
+
+        const uploadFilePath = `raw/${user.user_id}/${AppUtility.fileName()}`;
+
+        await uploadData({
+            path: uploadFilePath,
             data: AppUtility.dataURLtoBlob(selectedImageBase64),
         });
+
+        let tempUser = user;
+        tempUser.selected_image = uploadFilePath;
+        tempUser.gender = output;
+        tempUser.process_state = UserState.ImageSelected;
+        tempUser.update_on = new Date().toISOString();
+
+        await AppApi.dbPostOperation({
+            "action": "UPDATE_USER",
+            "action_type": "SELECTED_USER_IMAGE",
+            "data": tempUser
+        })
+
+        setUser(tempUser)
         setIsLoadingNext(false);
         stopCameraStreaming()
         setActiveStepIndex(nextStep);
@@ -142,25 +159,19 @@ export default function Fashion() {
         if (inputValue != "") {
             setIsLoadingNext(true);
             const userId = AppUtility.guid()
-            const newUser = {
-                "email": inputValue,
-                "user_id": userId,
-                "process_state": "Registered",
-                "selected_image": "",
-                "create_on": new Date().toISOString(),
-                "update_on": new Date().toISOString(),
-            }
+            let userPayload = AppUtility.generateUserPayload();
+            userPayload.email = inputValue;
+            userPayload.user_id = userId;
             const payload = {
                 "action": "ADD_USER",
-                "data": newUser
+                "data": userPayload
             }
             await AppApi.dbPostOperation(payload);
-            setUser(newUser)
+            setUser(userPayload)
             setIsLoadingNext(false);
             setActiveStepIndex(nextStep);
         }
     }
-
     const controlNavigation = (detail) => {
         if (detail.requestedStepIndex == 1) {
             registerUser(detail.requestedStepIndex);
@@ -218,8 +229,28 @@ export default function Fashion() {
                 clearAllCanvas();
             }}
 
-            onNavigate={({ detail }) => { controlNavigation(detail) }
-            }
+            onNavigate={({ detail }) => { controlNavigation(detail) }}
+
+            onSubmit={() => {
+                if (selectedItems.length > 0) {
+                    console.log(user, selectedItems)
+                    let tempUser = user;
+                    tempUser.selected_garment = selectedItems[0].image_id;
+                    tempUser.process_state = UserState.GarmentSelected;
+                    tempUser.update_on = new Date().toISOString();
+                    AppApi.dbPostOperation({
+                        "action": "UPDATE_USER",
+                        "action_type": "SELECTED_USER_GARMENT",
+                        "data": tempUser
+                    })
+                    setUser(tempUser);
+                    alert("Thank you. Will send details over mail once completed")
+                    setActiveStepIndex(0);
+                } else {
+                    alert("Please select at least one garment.");
+                }
+            }}
+
             activeStepIndex={activeStepIndex}
             steps={[
                 {
@@ -265,11 +296,11 @@ export default function Fashion() {
                                     <canvas id="camera-canvas5" className="canvas-photo-hidden" onClick={(detail) => { selectCanvasImage(detail) }}></canvas>
                                 </SpaceBetween>
                                 <SpaceBetween direction="horizontal" size="xl">
-                                    <img id="camera-img-1" className="camera-img"/>
-                                    <img id="camera-img-2" className="camera-img"/>
-                                    <img id="camera-img-3" className="camera-img"/>
-                                    <img id="camera-img-4" className="camera-img"/>
-                                    <img id="camera-img-5" className="camera-img"/>
+                                    <img id="camera-img-1" className="camera-img" />
+                                    <img id="camera-img-2" className="camera-img" />
+                                    <img id="camera-img-3" className="camera-img" />
+                                    <img id="camera-img-4" className="camera-img" />
+                                    <img id="camera-img-5" className="camera-img" />
                                 </SpaceBetween>
 
                                 {
@@ -293,9 +324,13 @@ export default function Fashion() {
                                         { text: "Female", id: "female", },
                                     ]}
                                 />
-                                <pre>{JSON.stringify(gender)}</pre>
-                                <pre>{JSON.stringify(user)}</pre>
                                 <Cards
+                                    entireCardClickable
+                                    selectionType="single"
+                                    selectedItems={selectedItems}
+                                    onSelectionChange={({ detail }) =>
+                                        setSelectedItems(detail?.selectedItems ?? [])
+                                    }
                                     ariaLabels={{
                                         itemSelectionLabel: (e, t) => `select ${t.name}`,
                                         selectionGroupLabel: "Item selection"

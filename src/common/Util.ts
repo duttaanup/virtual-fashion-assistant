@@ -1,4 +1,11 @@
 //@ts-nocheck
+export const UserState = {
+    "Registered": "Registered",
+    "ImageSelected": "Image Selected",
+    "GarmentSelected": "Garment Selected",
+    "ImageProcessed": "Image Processed",
+    "MailSent": "Mail Sent"
+}
 export const AppUtility = {
     guid: () => {
         const s4 = () => {
@@ -55,5 +62,19 @@ export const AppUtility = {
     
         // Create and return a Blob object
         return new Blob([u8arr], { type: mime });
+    },
+
+    generateUserPayload : () => {
+        return {
+            "email": "",
+            "user_id": "",
+            "process_state": UserState.Registered,
+            "selected_image": "",
+            "selected_garment": "",
+            "processed_image": "",
+            "gender":null,
+            "create_on": new Date().toISOString(),
+            "update_on": new Date().toISOString(),
+        }
     }
 }

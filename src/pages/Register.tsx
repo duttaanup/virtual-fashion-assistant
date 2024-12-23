@@ -1,8 +1,9 @@
 //@ts-nocheck
-import { BreadcrumbGroup, Button, CollectionPreferences, Container, Header, Pagination, SpaceBetween, Table, TextFilter } from "@cloudscape-design/components";
+import { BreadcrumbGroup, Button, CollectionPreferences, Container, Header, Pagination, SpaceBetween, Table, TextFilter, Modal } from "@cloudscape-design/components";
 import { AppApi } from "../common/AppApi";
+import { StorageImage } from '@aws-amplify/ui-react-storage';
 import { useEffect, useState } from "react";
-import { AppUtility } from "../common/Util";
+import { AppUtility , UserState} from "../common/Util";
 
 export default function Register() {
     const [userList, setUserList] = useState([]);
@@ -10,6 +11,10 @@ export default function Register() {
     const [pageSize, setPageSize] = useState(10);
     const [totalPages, setTotalPages] = useState(0);
     const [filteringText, setFilteringText] = useState("");
+    const [isImageVisible, setIsImageVisible] = useState(false);
+    const [isGarmentVisible,setIsGarmentVisible] = useState(false);
+    const [userSelectedImagePath, setUserSelectedImagePath] = useState("");
+    const [userSelectedGarment,setUserSelectedGarment]= useState("");
 
     const calculatePagination = (productList) => {
         const totalPages = Math.ceil(productList.length / pageSize);
@@ -44,20 +49,26 @@ export default function Register() {
         const useremail = window.prompt("Please enter your email", "user@email.com");
         if (useremail) {
             const userId = AppUtility.guid()
+            let payload = AppUtility.generateUserPayload();
+            payload.user_id = userId;
+            payload.email = useremail;
             await AppApi.dbPostOperation({
                 "action": "ADD_USER",
-                "data": {
-                    "email": useremail,
-                    "user_id": userId,
-                    "process_state": "Registered",
-                    "selected_image": "",
-                    "create_on": new Date().toISOString(),
-                    "update_on": new Date().toISOString(),
-                }
+                "data": payload
             });
             const userList = await AppApi.dbGetOperation();
             setUserList(userList)
         }
+    }
+
+    const showSelectedImage = (item) => {
+        setUserSelectedImagePath(item.selected_image)
+        setIsImageVisible(true)
+    }
+
+    const showSelectedGarment = (item) => {
+        setUserSelectedGarment(item.selected_garment);
+        setIsGarmentVisible(true);
     }
     return (
         <Container fitHeight header={
@@ -111,8 +122,10 @@ export default function Register() {
                         id: "action",
                         header: "",
                         cell: e => (<SpaceBetween size="s" direction="horizontal">
-                            <Button iconName="send" variant="icon" onClick={() => { console.log(e.user_id) }} />
-                            <Button iconName="full-screen" variant="icon" onClick={() => { console.log(e.user_id) }} />
+                            <Button iconName="user-profile-active"  onClick={() => { showSelectedImage(e) }} disabled={e.selected_image == ""}/>
+                            <Button iconName="map"  onClick={() => { showSelectedGarment(e) }} disabled={e.selected_garment == ""}/>
+                            <Button iconName="full-screen" onClick={() => { console.log(e.user_id) }} disabled={true}/>
+                            <Button iconName="send" onClick={() => { console.log(e) }} disabled={true}/>
                         </SpaceBetween>),
                     }
                 ]}
@@ -171,6 +184,19 @@ export default function Register() {
                     />
                 }
             />
+
+        <Modal visible={isImageVisible} onDismiss={() => {
+            setIsImageVisible(false)
+        }}>
+            {userSelectedImagePath != "" && <StorageImage alt="alt text" path={userSelectedImagePath}/>}
+        </Modal>
+
+        <Modal visible={isGarmentVisible} onDismiss={() => {
+            setIsGarmentVisible(false)
+        }}>
+            <img src={userSelectedGarment}/>
+        </Modal>
+
         </Container>
     );
 

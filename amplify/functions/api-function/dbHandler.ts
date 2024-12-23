@@ -50,6 +50,51 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         Source: "no-reply@mysampledemo.site",
       };
       await ses.sendEmail(emailParams).promise();
+    } else if (body.action == "UPDATE_USER") {
+      const dynamodb = new DynamoDB.DocumentClient();
+      if(body.action_type == "SELECTED_USER_IMAGE"){
+        const params = {
+          TableName: USER_REGISTRATION_TABLE,
+          Key: {
+            email: body.data.email,
+          },
+          UpdateExpression: "set #process_state = :process_state , #selected_image = :selected_image , #update_on = :update_on , #gender = :gender",
+          ExpressionAttributeNames: {
+            "#process_state": "process_state",
+            "#selected_image": "selected_image",
+            "#update_on":"update_on",
+            "#gender":"gender"
+          },
+          ExpressionAttributeValues: {
+            ":process_state": body.data.process_state,
+            ":selected_image": body.data.selected_image,
+            ":update_on": body.data.update_on,
+            ":gender": body.data.gender
+          },
+          ReturnValues: "ALL_NEW",
+        };
+        await dynamodb.update(params).promise();
+      }else if(body.action_type == "SELECTED_USER_GARMENT"){
+        const params = {
+          TableName: USER_REGISTRATION_TABLE,
+          Key: {
+            email: body.data.email,
+          },
+          UpdateExpression: "set #process_state = :process_state , #selected_garment = :selected_garment , #update_on = :update_on",
+          ExpressionAttributeNames: {
+            "#process_state": "process_state",
+            "#selected_garment": "selected_garment",
+            "#update_on":"update_on"
+          },
+          ExpressionAttributeValues: {
+            ":process_state": body.data.process_state,
+            ":selected_garment": body.data.processed_image,
+            ":update_on": body.data.selected_garment
+          },
+          ReturnValues: "ALL_NEW",
+        };
+        await dynamodb.update(params).promise();
+      }
     }
     return {
       statusCode: 200,
