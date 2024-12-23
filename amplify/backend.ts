@@ -18,6 +18,8 @@ const backend = defineBackend({
 
 const apiStack = backend.createStack("vfa-api-stack");
 const dbStack = backend.createStack("vfa-db-stack");
+const backendStack = backend.createStack("vfa-backend-stack");
+
 
 const vfaAPI = new RestApi(apiStack, "vfaAPI", {
     restApiName: "vfaAPI",

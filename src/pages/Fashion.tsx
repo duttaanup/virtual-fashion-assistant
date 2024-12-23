@@ -27,14 +27,18 @@ export default function Fashion() {
             .then((stream) => {
                 VIDEO_STREAM = stream
                 const track = VIDEO_STREAM.getVideoTracks()[0];
-                const imageCapture = new ImageCapture(track);
-                const imgBlob = imageCapture.takePhoto();
-                video.srcObject = VIDEO_STREAM;
-                imgBlob.then(() => {
-                    console.log("Camera ready")
-                    video.play();
-                })
+                if ('ImageCapture' in window) {
+                    const imageCapture = new ImageCapture(track);
+                    const imgBlob = imageCapture.takePhoto();
+                    imgBlob.then(() => {
+                        console.log("Camera ready")
+                    })
+                } else {
+                    console.log("ImageCapture API not supported")
 
+                }
+                video.srcObject = VIDEO_STREAM;
+                video.play();
             })
             .catch((err) => {
                 console.error('Error accessing camera:', err);
@@ -88,12 +92,21 @@ export default function Fashion() {
         canvas.classList.add("canvas-photo");
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const track = VIDEO_STREAM.getVideoTracks()[0];
-        const imageCapture = new ImageCapture(track);
-        const imgBlob = await imageCapture.takePhoto();
-
-        img.src = await AppUtility.blobToBase64(imgBlob);
-
+        if ('ImageCapture' in window) {
+            const track = VIDEO_STREAM.getVideoTracks()[0];
+            const imageCapture = new ImageCapture(track);
+            const imgBlob = await imageCapture.takePhoto();
+            img.src = await AppUtility.blobToBase64(imgBlob);
+        } else {
+            console.log("ImageCapture API not supported")
+            const canvas = document.createElement('canvas');
+            canvas.width = 1280;
+            canvas.height = 720;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, 1280, 720);
+            const data = canvas.toDataURL("image/jpeg");
+            img.src = data;
+        }
         counter++;
         setImagecount(counter);
         setShowalert(false);
@@ -202,7 +215,7 @@ export default function Fashion() {
         setSelectedItems([]);
     }
 
-    const onSetupSubmition = async () =>{
+    const onSetupSubmition = async () => {
         if (selectedItems.length > 0) {
             setIsLoadingNext(true)
             console.log(user, selectedItems)
@@ -263,7 +276,7 @@ export default function Fashion() {
                 clearAllCanvas();
             }}
             onNavigate={({ detail }) => { controlNavigation(detail) }}
-            onSubmit={() => {onSetupSubmition()}}
+            onSubmit={() => { onSetupSubmition() }}
             activeStepIndex={activeStepIndex}
             steps={[
                 {

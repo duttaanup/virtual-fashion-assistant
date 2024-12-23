@@ -84,6 +84,7 @@ export default function Register() {
                 sortingDisabled
                 stripedRows
                 stickyHeader
+                wrapLines
                 variant="embedded"
                 contentDensity="comfortable"
                 columnDefinitions={[
@@ -120,6 +121,7 @@ export default function Register() {
                     },
                     {
                         id: "action",
+                        minWidth: 120,
                         header: "",
                         cell: e => (<SpaceBetween size="s" direction="horizontal">
                             <Button iconName="user-profile-active"  onClick={() => { showSelectedImage(e) }} disabled={e.selected_image == ""}/>
