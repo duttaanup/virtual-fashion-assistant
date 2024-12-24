@@ -14,10 +14,11 @@ import {
     Model,
 } from "aws-cdk-lib/aws-apigateway";
 import { Policy, PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
-import { dbApiFunction , aiApiFunction , confyApiFunction } from "./functions/api-function/resource";
+import { dbApiFunction , aiApiFunction , confyApiFunction , sqsApiFunction} from "./functions/api-function/resource";
+import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 const backend = defineBackend({
- auth, dbApiFunction, aiApiFunction , confyApiFunction , storage
+ auth, dbApiFunction, aiApiFunction , confyApiFunction , storage, sqsApiFunction
 });
 
 const apiStack = backend.createStack("vfa-api-stack");
@@ -28,6 +29,13 @@ const backendStack = backend.createStack("vfa-backend-stack");
 const sqsQueue = new aws_sqs.Queue(backendStack, "vfaQueue", {
     visibilityTimeout: Duration.seconds(3600),
 });
+
+const sqsEventSource = new SqsEventSource(sqsQueue, {
+    batchSize: 10, // Number of messages to process in a batch
+    maxBatchingWindow: Duration.seconds(30) // Wait up to 30 seconds to gather messages
+});
+
+backend.sqsApiFunction.resources.lambda.addEventSource(sqsEventSource)
 
 const vfaAPI = new RestApi(apiStack, "vfaAPI", {
     restApiName: "vfaAPI",
