@@ -26,7 +26,6 @@ const backendStack = backend.createStack("vfa-backend-stack");
 
 // create sqs queue to accept request from APIGateway
 const sqsQueue = new aws_sqs.Queue(backendStack, "vfaQueue", {
-    queueName: "vfaQueue",
     visibilityTimeout: Duration.seconds(3600),
 });
 
