@@ -1,46 +1,67 @@
 //@ts-nocheck
-import { BreadcrumbGroup, Button, CollectionPreferences, Container, Header, Pagination, SpaceBetween, Table, TextFilter, Modal } from "@cloudscape-design/components";
+import { BreadcrumbGroup, Button, CollectionPreferences, Container, Header, Pagination, SpaceBetween, Table, TextFilter, Modal, PropertyFilter } from "@cloudscape-design/components";
 import { AppApi } from "../common/AppApi";
 import { StorageImage } from '@aws-amplify/ui-react-storage';
 import { useEffect, useState } from "react";
-import { AppUtility , UserState} from "../common/Util";
+import { AppUtility, UserState } from "../common/Util";
 
 export default function Register() {
     const [userList, setUserList] = useState([]);
+    const [filterUserList, setFilterUserList] = useState([]);
+    const [isLoading,setIsLoading] = useState(false);
+    const [query, setQuery] = useState({ tokens: [], operation: "and" });
+    const [filteringOption, setFilteringOption] = useState([]);
     const [currentPageIndex, setCurrentPageIndex] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [totalPages, setTotalPages] = useState(0);
-    const [filteringText, setFilteringText] = useState("");
     const [isImageVisible, setIsImageVisible] = useState(false);
-    const [isGarmentVisible,setIsGarmentVisible] = useState(false);
+    const [isGarmentVisible, setIsGarmentVisible] = useState(false);
     const [userSelectedImagePath, setUserSelectedImagePath] = useState("");
-    const [userSelectedGarment,setUserSelectedGarment]= useState("");
+    const [userSelectedGarment, setUserSelectedGarment] = useState("");
 
     const calculatePagination = (productList) => {
         const totalPages = Math.ceil(productList.length / pageSize);
         setTotalPages(totalPages);
     }
 
-    const filterContent = () => {
-        return userList;
-    }
-
     const contentByPagesize = () => {
         const startIndex = (currentPageIndex - 1) * pageSize;
         const endIndex = startIndex + pageSize;
-        return filterContent().slice(startIndex, endIndex);
+        return filterUserList.slice(startIndex, endIndex);
+    }
+
+    const getFilteringOption = (users) => {
+        const option = [];
+        if (users) {
+            users.map((item) => {
+                option.push({ propertyKey: "email", value: item.email })
+            })
+        } else {
+            userList.map((item) => {
+                option.push({ propertyKey: "email", value: item.email })
+            })
+        }
+        setFilteringOption(option)
     }
 
     useEffect(() => {
-        calculatePagination(filterContent());
+        calculatePagination(filterUserList);
         setCurrentPageIndex(1);
-    }, [filteringText, userList, pageSize])
+    }, [filterUserList, userList, pageSize])
+
+    const getUsers = async () => {
+        const userList = await AppApi.dbGetOperation();
+        setUserList(userList);
+        setFilterUserList(userList);
+        calculatePagination(userList);
+        getFilteringOption(userList);
+    }
 
     useEffect(() => {
         const init = async () => {
-            const userList = await AppApi.dbGetOperation();
-            setUserList(userList)
-            calculatePagination(userList)
+            setIsLoading(true);
+            await getUsers();
+            setIsLoading(false);
         }
         init();
     }, [])
@@ -48,6 +69,7 @@ export default function Register() {
     const registerUser = async () => {
         const useremail = window.prompt("Please enter your email", "user@email.com");
         if (useremail) {
+            setIsLoading(true);
             const userId = AppUtility.guid()
             let payload = AppUtility.generateUserPayload();
             payload.user_id = userId;
@@ -56,8 +78,8 @@ export default function Register() {
                 "action": "ADD_USER",
                 "data": payload
             });
-            const userList = await AppApi.dbGetOperation();
-            setUserList(userList)
+            await getUsers();
+            setIsLoading(false);
         }
     }
 
@@ -70,6 +92,20 @@ export default function Register() {
         setUserSelectedGarment(item.selected_garment);
         setIsGarmentVisible(true);
     }
+
+    const advanceFilter = (detail) => {
+        const query = detail;
+        const queryTokens = detail.tokenGroups;
+        console.log(queryTokens)
+        if (queryTokens.length > 0) {
+            const userEmails = queryTokens.map((token) => (token.propertyKey == "email" ? token.value : null)).filter((token) => token !== null);
+            const filteredUserList = userList.filter((item) => userEmails.includes(item.email));
+            setFilterUserList(filteredUserList);
+        } else {
+            setFilterUserList(userList)
+        }
+        setQuery(query)
+    }
     return (
         <Container fitHeight header={
             <BreadcrumbGroup
@@ -80,6 +116,7 @@ export default function Register() {
             />
         }>
             <Table
+                loading={isLoading}
                 sortingDescending
                 sortingDisabled
                 stripedRows
@@ -124,10 +161,10 @@ export default function Register() {
                         minWidth: 120,
                         header: "",
                         cell: e => (<SpaceBetween size="s" direction="horizontal">
-                            <Button iconName="user-profile-active"  onClick={() => { showSelectedImage(e) }} disabled={e.selected_image == ""}/>
-                            <Button iconName="map"  onClick={() => { showSelectedGarment(e) }} disabled={e.selected_garment == ""}/>
-                            <Button iconName="full-screen" onClick={() => { console.log(e.user_id) }} disabled={true}/>
-                            <Button iconName="send" onClick={() => { console.log(e) }} disabled={true}/>
+                            <Button iconName="user-profile-active" onClick={() => { showSelectedImage(e) }} disabled={e.selected_image == ""} />
+                            <Button iconName="map" onClick={() => { showSelectedGarment(e) }} disabled={e.selected_garment == ""} />
+                            <Button iconName="full-screen" onClick={() => { console.log(e.user_id) }} disabled={true} />
+                            <Button iconName="send" onClick={() => { console.log(e) }} disabled={true} />
                         </SpaceBetween>),
                     }
                 ]}
@@ -143,9 +180,53 @@ export default function Register() {
                 items={contentByPagesize()}
                 loadingText="Loading users"
                 filter={
-                    <TextFilter
-                        filteringPlaceholder="Find User"
-                        filteringText={filteringText}
+                    <PropertyFilter
+                        onChange={({ detail }) => advanceFilter(detail)}
+                        virtualScroll
+                        enableTokenGroups
+                        expandToViewport
+                        filteringAriaLabel="Find User"
+                        filteringPlaceholder="Find Users"
+                        filteringProperties={[
+                            {
+                                key: "email",
+                                operators: ["="],
+                                propertyLabel: "Email",
+                                groupValuesLabel: "Email values",
+                                group: "key"
+                            }
+                        ]}
+                        query={query}
+                        filteringOptions={filteringOption}
+                        i18nStrings={
+                            {
+                                filteringAriaLabel: "your choice",
+                                dismissAriaLabel: "Dismiss",
+                                clearAriaLabel: "Clear",
+                                clearFiltersText: "Clear filters",
+                                groupPropertiesText: "Attributes",
+                                filteringLabel: "Filtering",
+                                filteringPlaceholder: "Find Solutions",
+                                groupValuesText: "Values",
+                                operatorText: "Operator",
+                                operationText: "Operation",
+                                valueText: "Value",
+                                cancelActionText: "Cancel",
+                                applyActionText: "Apply",
+                                logicalOperatorText: "and",
+                                operationAndText: "and",
+                                operationOrText: "or",
+                                operatorLessText: "Less than",
+                                operatorLessOrEqualText: "Less than or equal",
+                                operatorGreaterText: "Greater than",
+                                operatorGreaterOrEqualText: "Greater than or equal",
+                                operatorContainsText: "Contains",
+                                operatorDoesNotContainText: "Does not contain",
+                                operatorEqualsText: "Equals",
+                                operatorDoesNotEqualText: "Does not equal",
+                                editTokenHeader: "Edit filter"
+                            }
+                        }
                     />
                 }
                 header={
@@ -154,7 +235,7 @@ export default function Register() {
                             Register User
                         </Button>}
                     >
-                        User Registration
+                        User Registration {(userList.length > 0 ? `(${userList.length})`: "")}
                     </Header>
                 }
                 pagination={
@@ -187,17 +268,17 @@ export default function Register() {
                 }
             />
 
-        <Modal visible={isImageVisible} onDismiss={() => {
-            setIsImageVisible(false)
-        }}>
-            {userSelectedImagePath != "" && <StorageImage alt="alt text" path={userSelectedImagePath}/>}
-        </Modal>
+            <Modal visible={isImageVisible} onDismiss={() => {
+                setIsImageVisible(false)
+            }}>
+                {userSelectedImagePath != "" && <StorageImage alt="alt text" path={userSelectedImagePath} />}
+            </Modal>
 
-        <Modal visible={isGarmentVisible} onDismiss={() => {
-            setIsGarmentVisible(false)
-        }}>
-            <img width="100%" src={`./garments/${userSelectedGarment}`}/>
-        </Modal>
+            <Modal visible={isGarmentVisible} onDismiss={() => {
+                setIsGarmentVisible(false)
+            }}>
+                <img width="100%" src={`./garments/${userSelectedGarment}`} />
+            </Modal>
 
         </Container>
     );
