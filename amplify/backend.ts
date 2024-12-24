@@ -125,7 +125,7 @@ const sqsIntegrationOptions: IntegrationOptions = {
         {
             statusCode: '200',
             responseTemplates: {
-                'application/json': JSON.stringify({ message: 'Message sent to SQS' })
+                'application/json': JSON.stringify({ message: 'Request Received' })
             }
         }
     ],
