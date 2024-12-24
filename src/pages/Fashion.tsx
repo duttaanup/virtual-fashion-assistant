@@ -23,7 +23,11 @@ export default function Fashion() {
 
     const initializeCamera = () => {
         const video = document.getElementById('camera-feed');
-        navigator.mediaDevices.getUserMedia({ video: true })
+        navigator.mediaDevices.getUserMedia({
+            video: true,
+            width: { ideal: 4096 },
+            height: { ideal: 2160 }
+        })
             .then((stream) => {
                 VIDEO_STREAM = stream
                 const track = VIDEO_STREAM.getVideoTracks()[0];
@@ -40,7 +44,7 @@ export default function Fashion() {
                     video.srcObject = VIDEO_STREAM;
                     video.play();
                 }
-                
+
             })
             .catch((err) => {
                 console.error('Error accessing camera:', err);
@@ -102,10 +106,10 @@ export default function Fashion() {
         } else {
             console.log("ImageCapture API not supported")
             const canvas = document.createElement('canvas');
-            canvas.width = 1280;
-            canvas.height = 720;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
             const context = canvas.getContext('2d');
-            context.drawImage(video, 0, 0, 1280, 720);
+            context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
             const data = canvas.toDataURL("image/jpeg");
             img.src = data;
         }
