@@ -16,8 +16,10 @@ export default function Register() {
     const [totalPages, setTotalPages] = useState(0);
     const [isImageVisible, setIsImageVisible] = useState(false);
     const [isGarmentVisible, setIsGarmentVisible] = useState(false);
+    const [isProcessedImageVisible, setIsProcessedImageVisible] = useState(false);
     const [userSelectedImagePath, setUserSelectedImagePath] = useState("");
     const [userSelectedGarment, setUserSelectedGarment] = useState("");
+    const [userSelectedProcessedImage, setUserSelectedProcessedImage] = useState("");
 
     const calculatePagination = (productList) => {
         const totalPages = Math.ceil(productList.length / pageSize);
@@ -93,6 +95,11 @@ export default function Register() {
         setIsGarmentVisible(true);
     }
 
+    const showSelectedProcessedImage = (item) => {
+        setUserSelectedProcessedImage(item.processed_image);
+        setIsProcessedImageVisible(true);
+    }
+
     const advanceFilter = (detail) => {
         const query = detail;
         const queryTokens = detail.tokenGroups;
@@ -163,7 +170,7 @@ export default function Register() {
                         cell: e => (<SpaceBetween size="s" direction="horizontal">
                             <Button iconName="user-profile-active" onClick={() => { showSelectedImage(e) }} disabled={e.selected_image == ""} />
                             <Button iconName="map" onClick={() => { showSelectedGarment(e) }} disabled={e.selected_garment == ""} />
-                            <Button iconName="full-screen" onClick={() => { console.log(e.user_id) }} disabled={true} />
+                            <Button iconName="full-screen" onClick={() => { showSelectedProcessedImage(e) }} disabled={e.processed_image == ""} />
                             <Button iconName="send" onClick={() => { console.log(e) }} disabled={true} />
                         </SpaceBetween>),
                     }
@@ -278,6 +285,12 @@ export default function Register() {
                 setIsGarmentVisible(false)
             }}>
                 <img width="100%" src={`./garments/${userSelectedGarment}`} />
+            </Modal>
+
+            <Modal visible={isProcessedImageVisible} onDismiss={() => {
+                setIsProcessedImageVisible(false)
+            }}>
+                {userSelectedProcessedImage != "" && <StorageImage alt="alt text" path={userSelectedProcessedImage} />}
             </Modal>
 
         </Container>

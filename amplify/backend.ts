@@ -27,7 +27,7 @@ const backendStack = backend.createStack("vfa-backend-stack");
 
 // create sqs queue to accept request from APIGateway
 const sqsQueue = new aws_sqs.Queue(backendStack, "vfaQueue", {
-    visibilityTimeout: Duration.seconds(3600),
+    visibilityTimeout: Duration.seconds(60),
 });
 
 const sqsEventSource = new SqsEventSource(sqsQueue, {
@@ -97,8 +97,18 @@ backend.dbApiFunction.resources.lambda.addToRolePolicy(
     })
 );
 
+backend.sqsApiFunction.resources.lambda.addToRolePolicy(
+    new PolicyStatement({
+        actions: ["ses:SendRawEmail"],
+        resources: ["*"],
+    })
+);
+// add s3 access for storage
+backend.storage.resources.bucket.grantReadWrite(backend.sqsApiFunction.resources.lambda);
+
 // add dynamodb access
 userRegistrationTable.grantReadWriteData(backend.dbApiFunction.resources.lambda);
+userRegistrationTable.grantReadWriteData(backend.sqsApiFunction.resources.lambda);
 
 const dblambdaIntegration = new LambdaIntegration(backend.dbApiFunction.resources.lambda);
 const ailambdaIntegration = new LambdaIntegration(backend.aiApiFunction.resources.lambda);
@@ -186,6 +196,10 @@ backend.auth.resources.unauthenticatedUserIamRole.attachInlinePolicy(
 );
 
 backend.dbApiFunction.addEnvironment("USER_REGISTRATION_TABLE", userRegistrationTable.tableName);
+backend.sqsApiFunction.addEnvironment("USER_REGISTRATION_TABLE", userRegistrationTable.tableName);
+backend.sqsApiFunction.addEnvironment("S3_BUCKET", backend.storage.resources.bucket.bucketName);
+backend.sqsApiFunction.addEnvironment("EMAIL_ID", "no-reply@mysampledemo.site");
+backend.dbApiFunction.addEnvironment("EMAIL_ID", "no-reply@mysampledemo.site");
 
 backend.addOutput({
     custom: {

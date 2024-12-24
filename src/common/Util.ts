@@ -4,7 +4,6 @@ export const UserState = {
     "ImageSelected": "Image Selected",
     "GarmentSelected": "Garment Selected",
     "ImageProcessed": "Image Processed",
-    "MailSent": "Mail Sent"
 }
 export const AppUtility = {
     guid: () => {

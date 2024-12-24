@@ -8,6 +8,7 @@ const header = {
 };
 
 const USER_REGISTRATION_TABLE = process.env.USER_REGISTRATION_TABLE;
+const EMAIL_ID = process.env.EMAIL_ID;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   console.log("event", event);
@@ -47,7 +48,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             Data: "Virtual Fashion Assistant Registration",
           },
         },
-        Source: "no-reply@mysampledemo.site",
+        Source: EMAIL_ID,
       };
       await ses.sendEmail(emailParams).promise();
     } else if (body.action == "UPDATE_USER") {
