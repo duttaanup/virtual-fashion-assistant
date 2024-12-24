@@ -15,3 +15,8 @@ export const confyApiFunction = defineFunction({
     name: "confy-api",
     entry: "./confyHandler.ts"
 })
+
+export const sqsApiFunction = defineFunction({
+    name: "sqs-api",
+    entry: "./sqsHandler.ts"
+})

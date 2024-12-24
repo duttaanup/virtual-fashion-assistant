@@ -42,6 +42,23 @@ const vfaAPI = new RestApi(apiStack, "vfaAPI", {
     },
 });
 
+// Create API key
+const apiKey = vfaAPI.addApiKey('CallbackApiKey', {
+    description: 'API Key for callback endpoint'
+});
+
+// Create usage plan
+const usagePlan = vfaAPI.addUsagePlan('CallbackUsagePlan', {
+    description: 'Usage plan for callback endpoint',
+    apiStages: [{
+        api: vfaAPI,
+        stage: vfaAPI.deploymentStage
+    }]
+});
+
+// Associate the API key with the usage plan
+usagePlan.addApiKey(apiKey);
+
 // Create DynamoDB for User Registration using cdk stack
 const userRegistrationTable = new aws_dynamodb.Table(dbStack, "UserRegistration", {
     partitionKey: { name: "email", type: aws_dynamodb.AttributeType.STRING },
@@ -102,7 +119,6 @@ const apiGatewayToSqsRole = new Role(apiStack, 'ApiGatewayToSqsRole', {
 // Grant SQS permissions to the role
 sqsQueue.grantSendMessages(apiGatewayToSqsRole);
 
-// Define integration options
 const sqsIntegrationOptions: IntegrationOptions = {
     credentialsRole: apiGatewayToSqsRole,
     integrationResponses: [
@@ -122,7 +138,6 @@ const sqsIntegrationOptions: IntegrationOptions = {
     }
 };
 
-// Create the integration
 const sqsIntegration = new Integration({
     type: IntegrationType.AWS,
     integrationHttpMethod: 'POST',
@@ -131,6 +146,7 @@ const sqsIntegration = new Integration({
 });
 
 callbackPath.addMethod('POST', sqsIntegration, {
+    apiKeyRequired: true,
     methodResponses: [
         {
             statusCode: '200',
