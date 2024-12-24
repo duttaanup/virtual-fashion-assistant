@@ -96,6 +96,12 @@ backend.dbApiFunction.resources.lambda.addToRolePolicy(
         resources: ["*"],
     })
 );
+backend.dbApiFunction.resources.lambda.addToRolePolicy(
+    new PolicyStatement({
+        actions: ["ses:SendRawEmail"],
+        resources: ["*"],
+    })
+);
 
 backend.sqsApiFunction.resources.lambda.addToRolePolicy(
     new PolicyStatement({
@@ -105,6 +111,7 @@ backend.sqsApiFunction.resources.lambda.addToRolePolicy(
 );
 // add s3 access for storage
 backend.storage.resources.bucket.grantReadWrite(backend.sqsApiFunction.resources.lambda);
+backend.storage.resources.bucket.grantReadWrite(backend.dbApiFunction.resources.lambda);
 
 // add dynamodb access
 userRegistrationTable.grantReadWriteData(backend.dbApiFunction.resources.lambda);
@@ -197,9 +204,13 @@ backend.auth.resources.unauthenticatedUserIamRole.attachInlinePolicy(
 
 backend.dbApiFunction.addEnvironment("USER_REGISTRATION_TABLE", userRegistrationTable.tableName);
 backend.sqsApiFunction.addEnvironment("USER_REGISTRATION_TABLE", userRegistrationTable.tableName);
+
+backend.dbApiFunction.addEnvironment("S3_BUCKET", backend.storage.resources.bucket.bucketName);
 backend.sqsApiFunction.addEnvironment("S3_BUCKET", backend.storage.resources.bucket.bucketName);
-backend.sqsApiFunction.addEnvironment("EMAIL_ID", "no-reply@mysampledemo.site");
+
 backend.dbApiFunction.addEnvironment("EMAIL_ID", "no-reply@mysampledemo.site");
+backend.sqsApiFunction.addEnvironment("EMAIL_ID", "no-reply@mysampledemo.site");
+
 
 backend.addOutput({
     custom: {

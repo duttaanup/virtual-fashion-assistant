@@ -85,6 +85,13 @@ export default function Register() {
         }
     }
 
+    const sendMail = async (item) => {
+        await AppApi.dbPostOperation({
+            "action": "SEND_IMAGE",
+            "data": {"email": item.email}
+        })
+    }
+
     const showSelectedImage = (item) => {
         setUserSelectedImagePath(item.selected_image)
         setIsImageVisible(true)
@@ -171,7 +178,7 @@ export default function Register() {
                             <Button iconName="user-profile-active" onClick={() => { showSelectedImage(e) }} disabled={e.selected_image == ""} />
                             <Button iconName="map" onClick={() => { showSelectedGarment(e) }} disabled={e.selected_garment == ""} />
                             <Button iconName="full-screen" onClick={() => { showSelectedProcessedImage(e) }} disabled={e.processed_image == ""} />
-                            <Button iconName="send" onClick={() => { console.log(e) }} disabled={true} />
+                            <Button iconName="send" onClick={() => { sendMail(e) }} disabled={e.processed_image == ""} />
                         </SpaceBetween>),
                     }
                 ]}

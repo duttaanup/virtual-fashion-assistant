@@ -1,6 +1,7 @@
 //@ts-nocheck
 import type { APIGatewayProxyHandler } from "aws-lambda";
-import { DynamoDB, SES } from "aws-sdk";
+import { DynamoDB, SES , S3} from "aws-sdk";
+import { createMimeMessage } from "mimetext";
 
 const header = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +10,7 @@ const header = {
 
 const USER_REGISTRATION_TABLE = process.env.USER_REGISTRATION_TABLE;
 const EMAIL_ID = process.env.EMAIL_ID;
+const S3_BUCKET = process.env.S3_BUCKET;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   console.log("event", event);
@@ -53,7 +55,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       await ses.sendEmail(emailParams).promise();
     } else if (body.action == "UPDATE_USER") {
       const dynamodb = new DynamoDB.DocumentClient();
-      if(body.action_type == "SELECTED_USER_IMAGE"){
+      if (body.action_type == "SELECTED_USER_IMAGE") {
         const params = {
           TableName: USER_REGISTRATION_TABLE,
           Key: {
@@ -63,8 +65,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           ExpressionAttributeNames: {
             "#process_state": "process_state",
             "#selected_image": "selected_image",
-            "#update_on":"update_on",
-            "#gender":"gender"
+            "#update_on": "update_on",
+            "#gender": "gender"
           },
           ExpressionAttributeValues: {
             ":process_state": body.data.process_state,
@@ -75,7 +77,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           ReturnValues: "ALL_NEW",
         };
         await dynamodb.update(params).promise();
-      }else if(body.action_type == "SELECTED_USER_GARMENT"){
+      } else if (body.action_type == "SELECTED_USER_GARMENT") {
         const params = {
           TableName: USER_REGISTRATION_TABLE,
           Key: {
@@ -85,7 +87,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           ExpressionAttributeNames: {
             "#process_state": "process_state",
             "#selected_garment": "selected_garment",
-            "#update_on":"update_on"
+            "#update_on": "update_on"
           },
           ExpressionAttributeValues: {
             ":process_state": body.data.process_state,
@@ -96,6 +98,32 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         };
         await dynamodb.update(params).promise();
       }
+    } else if (body.action == "SEND_IMAGE"){
+        // Get record from dynamodb by email
+        const dynamodb = new DynamoDB.DocumentClient();
+        const params = {
+            TableName: USER_REGISTRATION_TABLE,
+            Key: {
+                email: body.data.email,
+            }
+        };
+        const data = await dynamodb.get(params).promise();
+        const db_item = data.Item;
+        console.log(db_item)
+
+        // Read file from s3
+          const s3 = new S3();
+          const s3Params = {
+            Bucket: S3_BUCKET,
+            Key: db_item.processed_image,
+          };
+          const s3Data = await s3.getObject(s3Params).promise();
+          const base64Data = s3Data.Body.toString('base64');
+          await sendEmailWithAttachment(
+            EMAIL_ID,
+            base64Data,
+            db_item.email
+          );
     }
     return {
       statusCode: 200,
@@ -111,3 +139,43 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   }
 
 };
+
+async function sendEmailWithAttachment(fromEmail: string, base64Data: string, recipientEmail: string) {
+  const ses = new SES();
+  // Create MIME message
+  const msg = createMimeMessage();
+
+  // Set email headers with proper formatting
+  msg.setSender({ name: "Virtual Fashion Assistant", addr: fromEmail });
+  msg.setSubject("Your Processed Image");
+  msg.setRecipient(recipientEmail);
+  msg.addAttachment({
+    filename: "processed_image.jpg",
+    contentType: "image/jpeg",
+    data: base64Data,
+    encoding: "base64"
+  });
+
+  msg.addMessage({
+    contentType: 'text/html',
+    data: `<html>
+        <body>
+          <p>Please find your processed image attached.</p>
+        </body>
+      </html>`
+  })
+  const params = {
+    Destinations: msg.getRecipients({ type: 'to' }).map(mailbox => mailbox.addr),
+    RawMessage: {
+      Data: Buffer.from(msg.asRaw(), 'utf8') // the raw message data needs to be sent as uint8array
+    },
+    Source: msg.getSender().addr
+  }
+  try {
+    await ses.sendRawEmail(params).promise();
+    console.log("Email sent successfully");
+  } catch (error) {
+    console.error("Error sending email:", error);
+    throw error;
+  }
+}
