@@ -5,6 +5,7 @@ import { createMimeMessage } from "mimetext";
 const USER_REGISTRATION_TABLE = process.env.USER_REGISTRATION_TABLE;
 const S3_BUCKET = process.env.S3_BUCKET;
 const EMAIL_ID = process.env.EMAIL_ID;
+const SUPPORT_EMAIL_ID = process.env.SUPPORT_EMAIL_ID;
 
 export const handler: SQSHandler = async (event: SQSEvent) => {
   try {
@@ -25,7 +26,7 @@ export const handler: SQSHandler = async (event: SQSEvent) => {
     const ses = new SES();
     const response = await ses.sendEmail({
       Destination: {
-        ToAddresses: ["duttanup@amazon.com"],
+        ToAddresses: [SUPPORT_EMAIL_ID],
       },
       Message: {
         Body: {

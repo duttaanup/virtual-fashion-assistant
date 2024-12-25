@@ -1,14 +1,14 @@
 //@ts-nocheck
-import { BreadcrumbGroup, Button, CollectionPreferences, Container, Header, Pagination, SpaceBetween, Table, TextFilter, Modal, PropertyFilter } from "@cloudscape-design/components";
+import { BreadcrumbGroup, Button, CollectionPreferences, Container, Header, Pagination, SpaceBetween, Table, Modal, PropertyFilter } from "@cloudscape-design/components";
 import { AppApi } from "../common/AppApi";
 import { StorageImage } from '@aws-amplify/ui-react-storage';
 import { useEffect, useState } from "react";
-import { AppUtility, UserState } from "../common/Util";
+import { AppUtility, ProcessActionEnum } from "../common/Util";
 
 export default function Register() {
     const [userList, setUserList] = useState([]);
     const [filterUserList, setFilterUserList] = useState([]);
-    const [isLoading,setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [query, setQuery] = useState({ tokens: [], operation: "and" });
     const [filteringOption, setFilteringOption] = useState([]);
     const [currentPageIndex, setCurrentPageIndex] = useState(1);
@@ -77,7 +77,7 @@ export default function Register() {
             payload.user_id = userId;
             payload.email = useremail;
             await AppApi.dbPostOperation({
-                "action": "ADD_USER",
+                "action": ProcessActionEnum.ADD_USER,
                 "data": payload
             });
             await getUsers();
@@ -87,8 +87,8 @@ export default function Register() {
 
     const sendMail = async (item) => {
         await AppApi.dbPostOperation({
-            "action": "SEND_IMAGE",
-            "data": {"email": item.email}
+            "action": ProcessActionEnum.SEND_IMAGE,
+            "data": { "email": item.email }
         })
     }
 
@@ -219,15 +219,12 @@ export default function Register() {
                                 clearAriaLabel: "Clear",
                                 clearFiltersText: "Clear filters",
                                 groupPropertiesText: "Attributes",
-                                filteringLabel: "Filtering",
                                 filteringPlaceholder: "Find Solutions",
                                 groupValuesText: "Values",
                                 operatorText: "Operator",
-                                operationText: "Operation",
                                 valueText: "Value",
                                 cancelActionText: "Cancel",
                                 applyActionText: "Apply",
-                                logicalOperatorText: "and",
                                 operationAndText: "and",
                                 operationOrText: "or",
                                 operatorLessText: "Less than",
@@ -249,7 +246,7 @@ export default function Register() {
                             Register User
                         </Button>}
                     >
-                        User Registration {(userList.length > 0 ? `(${userList.length})`: "")}
+                        User Registration {(userList.length > 0 ? `(${userList.length})` : "")}
                     </Header>
                 }
                 pagination={

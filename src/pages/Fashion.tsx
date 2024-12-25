@@ -3,7 +3,7 @@ import { Alert, Box, BreadcrumbGroup, Button, Cards, Container, FormField, Input
 import { useEffect, useState } from "react";
 import { garmentList } from "../common";
 import { AppApi } from "../common/AppApi";
-import { AppUtility, UserState } from "../common/Util";
+import { AppUtility, ProcessActionEnum, ProcessActionTypeEnum, UserStateEnum } from "../common/Util";
 import { uploadData } from 'aws-amplify/storage';
 
 let VIDEO_STREAM = null;
@@ -144,7 +144,7 @@ export default function Fashion() {
     const submitPhoto = async (nextStep) => {
         setIsLoadingNext(true);
         const ai_response = await AppApi.aiOperation(selectedImage);
-        const model_response = ai_response.response.output.message.content[0]
+        const model_response = ai_response?.response?.output.message.content[0]
         const result = model_response.text.replace(/\n/g, "").replace("json", "").replace(/`/g, "");
         const output = JSON.parse(result);
         setGender(output)
@@ -159,13 +159,13 @@ export default function Fashion() {
 
         let tempUser = user;
         tempUser.selected_image = uploadFilePath;
-        tempUser.gender = output;
-        tempUser.process_state = UserState.ImageSelected;
+        tempUser.gender = gender;
+        tempUser.process_state = UserStateEnum.IMAGE_SELECTED;
         tempUser.update_on = new Date().toISOString();
 
         await AppApi.dbPostOperation({
-            "action": "UPDATE_USER",
-            "action_type": "SELECTED_USER_IMAGE",
+            "action": ProcessActionEnum.UPDATE_USER,
+            "action_type": ProcessActionTypeEnum.SELECTED_USER_IMAGE,
             "data": tempUser
         })
 
@@ -182,7 +182,7 @@ export default function Fashion() {
             userPayload.email = inputValue;
             userPayload.user_id = userId;
             const payload = {
-                "action": "ADD_USER",
+                "action": ProcessActionEnum.ADD_USER,
                 "data": userPayload
             }
             await AppApi.dbPostOperation(payload);
@@ -227,11 +227,11 @@ export default function Fashion() {
             console.log(user, selectedItems)
             let tempUser = user;
             tempUser.selected_garment = selectedItems[0].image_id;
-            tempUser.process_state = UserState.GarmentSelected;
+            tempUser.process_state = UserStateEnum.GARMENT_SELECTED;
             tempUser.update_on = new Date().toISOString();
             AppApi.dbPostOperation({
-                "action": "UPDATE_USER",
-                "action_type": "SELECTED_USER_GARMENT",
+                "action": ProcessActionEnum.UPDATE_USER,
+                "action_type": ProcessActionTypeEnum.SELECTED_USER_GARMENT,
                 "data": tempUser
             })
             await AppApi.confyOperation()

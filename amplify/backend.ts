@@ -17,6 +17,10 @@ import { Policy, PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws
 import { dbApiFunction , aiApiFunction , confyApiFunction , sqsApiFunction} from "./functions/api-function/resource";
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
+
+const EMAIL_ID = "no-reply@mysampledemo.site";
+const SUPPORT_EMAIL_ID = "duttanup@amazon.com";
+
 const backend = defineBackend({
  auth, dbApiFunction, aiApiFunction , confyApiFunction , storage, sqsApiFunction
 });
@@ -214,8 +218,9 @@ backend.sqsApiFunction.addEnvironment("USER_REGISTRATION_TABLE", userRegistratio
 backend.dbApiFunction.addEnvironment("S3_BUCKET", backend.storage.resources.bucket.bucketName);
 backend.sqsApiFunction.addEnvironment("S3_BUCKET", backend.storage.resources.bucket.bucketName);
 
-backend.dbApiFunction.addEnvironment("EMAIL_ID", "no-reply@mysampledemo.site");
-backend.sqsApiFunction.addEnvironment("EMAIL_ID", "no-reply@mysampledemo.site");
+backend.dbApiFunction.addEnvironment("EMAIL_ID", EMAIL_ID);
+backend.sqsApiFunction.addEnvironment("EMAIL_ID", EMAIL_ID);
+backend.sqsApiFunction.addEnvironment("SUPPORT_EMAIL_ID", SUPPORT_EMAIL_ID);
 
 
 backend.addOutput({

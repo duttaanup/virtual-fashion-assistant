@@ -1,10 +1,22 @@
 //@ts-nocheck
-export const UserState = {
-    "Registered": "Registered",
-    "ImageSelected": "Image Selected",
-    "GarmentSelected": "Garment Selected",
-    "ImageProcessed": "Image Processed",
+export enum UserStateEnum {
+    REGISTERED = "Registered",
+    IMAGE_SELECTED = "Image Selected",
+    GARMENT_SELECTED = "Garment Selected",
+    IMAGE_PROCESSED = "Image Processed",
 }
+
+export enum ProcessActionEnum {
+    ADD_USER = "ADD_USER",
+    SEND_IMAGE = "SEND_IMAGE",
+    UPDATE_USER = "UPDATE_USER"
+}
+
+export enum ProcessActionTypeEnum {
+    SELECTED_USER_GARMENT = "SELECTED_USER_GARMENT",
+    SELECTED_USER_IMAGE = "SELECTED_USER_IMAGE"
+}
+
 export const AppUtility = {
     guid: () => {
         const s4 = () => {
@@ -15,7 +27,7 @@ export const AppUtility = {
         return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
     },
 
-    fileName : () => {
+    fileName: () => {
         return `${AppUtility.guid()}.jpeg`;
     },
 
@@ -28,7 +40,7 @@ export const AppUtility = {
     base64ToBlob: (base64String, contentType = '') => {
         const byteCharacters = atob(base64String.split(',')[1]); // Decode Base64
         const byteNumbers = new Uint8Array(byteCharacters.length);
-        
+
         for (let i = 0; i < byteCharacters.length; i++) {
             byteNumbers[i] = byteCharacters.charCodeAt(i); // Convert characters to byte numbers
         }
@@ -53,25 +65,25 @@ export const AppUtility = {
         const bstr = atob(arr[1]); // Decode the base64 string
         const n = bstr.length;
         const u8arr = new Uint8Array(n);
-    
+
         // Create a byte array from the decoded string
         for (let i = 0; i < n; i++) {
             u8arr[i] = bstr.charCodeAt(i);
         }
-    
+
         // Create and return a Blob object
         return new Blob([u8arr], { type: mime });
     },
 
-    generateUserPayload : () => {
+    generateUserPayload: () => {
         return {
             "email": "",
             "user_id": "",
-            "process_state": UserState.Registered,
+            "process_state": UserStateEnum.REGISTERED,
             "selected_image": "",
             "selected_garment": "",
             "processed_image": "",
-            "gender":null,
+            "gender": null,
             "create_on": new Date().toISOString(),
             "update_on": new Date().toISOString(),
         }
