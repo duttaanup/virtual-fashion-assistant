@@ -109,6 +109,12 @@ backend.sqsApiFunction.resources.lambda.addToRolePolicy(
         resources: ["*"],
     })
 );
+backend.sqsApiFunction.resources.lambda.addToRolePolicy(
+    new PolicyStatement({
+        actions: ["ses:SendEmail"],
+        resources: ["*"],
+    })
+);
 // add s3 access for storage
 backend.storage.resources.bucket.grantReadWrite(backend.sqsApiFunction.resources.lambda);
 backend.storage.resources.bucket.grantReadWrite(backend.dbApiFunction.resources.lambda);

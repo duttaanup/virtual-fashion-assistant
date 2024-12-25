@@ -22,11 +22,43 @@ export const handler: SQSHandler = async (event: SQSEvent) => {
     }
   } catch (error) {
     console.error('Error processing messages:', error);
-    throw error;
+    const ses = new SES();
+    const response = await ses.sendEmail({
+      Destination: {
+        ToAddresses: ["duttanup@amazon.com"],
+      },
+      Message: {
+        Body: {
+          Text: {
+            Data: `Error processing messages: ${error}`,
+          },
+        },
+        Subject: {
+          Data: 'Error processing messages',
+        },
+      },
+      Source: EMAIL_ID,
+    }).promise();
+    console.log("Email sent successfully:", response);
   }
 };
 
 async function processMessage(messageBody: any) {
+  // Read file from s3
+  const s3 = new S3();
+  const s3Params = {
+    Bucket: S3_BUCKET,
+    Key: messageBody.user_data.processed_image,
+  };
+  const s3Data = await s3.getObject(s3Params).promise();
+  const base64Data = s3Data.Body.toString('base64');
+
+  await sendEmailWithAttachment(
+    EMAIL_ID,
+    base64Data,
+    messageBody.user_data.email // assuming this is the recipient's email
+  );
+
   const dynamodb = new DynamoDB.DocumentClient();
   const params = {
     TableName: USER_REGISTRATION_TABLE,
@@ -47,23 +79,7 @@ async function processMessage(messageBody: any) {
     ReturnValues: "ALL_NEW",
   };
   await dynamodb.update(params).promise();
-
-  // Read file from s3
-  const s3 = new S3();
-  const s3Params = {
-    Bucket: S3_BUCKET,
-    Key: messageBody.user_data.processed_image,
-  };
-  const s3Data = await s3.getObject(s3Params).promise();
-  const base64Data = s3Data.Body.toString('base64');
-
-  await sendEmailWithAttachment(
-    EMAIL_ID,
-    base64Data,
-    messageBody.user_data.email // assuming this is the recipient's email
-  );
 }
-
 
 async function sendEmailWithAttachment(fromEmail: string, base64Data: string, recipientEmail: string) {
   const ses = new SES();
