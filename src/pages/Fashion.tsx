@@ -234,7 +234,7 @@ export default function Fashion() {
                 "action_type": ProcessActionTypeEnum.SELECTED_USER_GARMENT,
                 "data": tempUser
             })
-            await AppApi.confyOperation()
+            await AppApi.confyOperation(tempUser)
             alert("Thank you. Will send details over mail once completed")
             resetAll();
         } else {

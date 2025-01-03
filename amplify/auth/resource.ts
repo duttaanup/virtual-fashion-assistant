@@ -7,5 +7,12 @@ import { defineAuth } from '@aws-amplify/backend';
 export const auth = defineAuth({
   loginWith: {
     email: true,
-  }
+  },
+  senders: {
+    email: {
+      fromEmail: "no-reply@mysampledemo.site",
+      fromName: "Virtual Fashion Assistant",
+      replyTo: "no-reply@mysampledemo.site"
+    },
+  },
 });

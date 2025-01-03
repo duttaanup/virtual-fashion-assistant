@@ -17,7 +17,7 @@ export const AppApi = {
                 path: DB_PATH,
                 options: {
                     headers: {
-                        Authorization: token
+                        Authorization: token,
                     }
                 }
             });
@@ -26,6 +26,7 @@ export const AppApi = {
             return response;
         } catch (error) {
             console.log('GET call failed: ', error);
+            return null;
         }
     },
     dbPostOperation: async (payload) => {
@@ -70,17 +71,18 @@ export const AppApi = {
             console.log('GET call failed: ', JSON.parse(error.response.body));
         }
     },
-    confyOperation: async () => {
+    confyOperation: async (payload) => {
         try {
             const session = await fetchAuthSession();
             const token = session.tokens?.idToken
-            const restOperation = get({
+            const restOperation = post({
                 apiName: API_NAME,
                 path: CONFY_PATH,
                 options: {
                     headers: {
                         Authorization: token
-                    }
+                    },
+                    body : payload
                 }
             });
             const response = await restOperation.response;

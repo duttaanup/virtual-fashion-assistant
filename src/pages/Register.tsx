@@ -22,14 +22,18 @@ export default function Register() {
     const [userSelectedProcessedImage, setUserSelectedProcessedImage] = useState("");
 
     const calculatePagination = (productList) => {
-        const totalPages = Math.ceil(productList.length / pageSize);
-        setTotalPages(totalPages);
+        if (productList != null) {
+            const totalPages = Math.ceil(productList.length / pageSize);
+            setTotalPages(totalPages);
+        }
     }
 
     const contentByPagesize = () => {
-        const startIndex = (currentPageIndex - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        return filterUserList.slice(startIndex, endIndex);
+        if (filterUserList != null) {
+            const startIndex = (currentPageIndex - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            return filterUserList.slice(startIndex, endIndex);
+        }
     }
 
     const getFilteringOption = (users) => {
@@ -246,7 +250,7 @@ export default function Register() {
                             Register User
                         </Button>}
                     >
-                        User Registration {(userList.length > 0 ? `(${userList.length})` : "")}
+                        {userList && `User Registration ${(userList.length > 0 ? `(${userList.length})` : "")}`}
                     </Header>
                 }
                 pagination={

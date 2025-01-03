@@ -1,5 +1,5 @@
 import { defineBackend } from '@aws-amplify/backend';
-import { aws_dynamodb, RemovalPolicy, Stack , aws_sqs, Duration} from "aws-cdk-lib";
+import { aws_dynamodb, RemovalPolicy, Stack, aws_sqs, Duration } from "aws-cdk-lib";
 import { auth } from "./auth/resource";
 import { storage } from "./storage/resource";
 import {
@@ -8,22 +8,65 @@ import {
     Cors,
     LambdaIntegration,
     IntegrationType, IntegrationOptions,
-    PassthroughBehavior ,
+    PassthroughBehavior,
     RestApi,
     Integration,
+    MethodLoggingLevel,
     Model,
 } from "aws-cdk-lib/aws-apigateway";
 import { Policy, PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
-import { dbApiFunction , aiApiFunction , confyApiFunction , sqsApiFunction} from "./functions/api-function/resource";
+import { dbApiFunction, aiApiFunction, confyApiFunction, sqsApiFunction } from "./functions/api-function/resource";
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
-
+import * as cognito from 'aws-cdk-lib/aws-cognito';
 
 const EMAIL_ID = "no-reply@mysampledemo.site";
 const SUPPORT_EMAIL_ID = "duttanup@amazon.com";
 
 const backend = defineBackend({
- auth, dbApiFunction, aiApiFunction , confyApiFunction , storage, sqsApiFunction
+    auth, dbApiFunction, aiApiFunction, confyApiFunction, storage, sqsApiFunction
 });
+
+//add m2m application type app client on user pool
+
+// Add resource server to define custom scopes
+backend.auth.resources.userPool.addResourceServer('ResourceServer', {
+    identifier: 'api',
+    scopes: [
+        {
+            scopeName: 'read',
+            scopeDescription: 'Read access to API'
+        },
+    ]
+});
+
+
+backend.auth.resources.userPool.addClient('m2m-client', {
+    generateSecret: true, // Enable client secret for M2M applications
+    authFlows: {
+        adminUserPassword: true,
+        custom: true,
+        userPassword: false,
+        userSrp: false
+    },
+    preventUserExistenceErrors: true,
+    enableTokenRevocation: true,
+    accessTokenValidity: Duration.minutes(60),
+    refreshTokenValidity: Duration.minutes(60),
+    supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.COGNITO],
+    oAuth: {
+        flows: {
+            clientCredentials: true,
+            implicitCodeGrant: false,
+            authorizationCodeGrant: false
+        },
+        scopes: [
+            {
+                scopeName: 'api/read'
+            }
+        ]
+    }
+});
+
 
 const apiStack = backend.createStack("vfa-api-stack");
 const dbStack = backend.createStack("vfa-db-stack");
@@ -46,22 +89,44 @@ const vfaAPI = new RestApi(apiStack, "vfaAPI", {
     deploy: true,
     deployOptions: {
         stageName: "dev",
+        throttlingRateLimit: 100,
+        throttlingBurstLimit: 50,
+        cacheClusterEnabled: true,
+        cacheClusterSize: "0.5",
+        cacheTtl: Duration.seconds(60),
+        loggingLevel: MethodLoggingLevel.INFO,
+        tracingEnabled: true,
+        metricsEnabled: true,
+        dataTraceEnabled: true,
+        methodOptions: {
+            "/*/*": {
+                throttlingRateLimit: 100,
+                throttlingBurstLimit: 50,
+            },
+        },
     },
     defaultCorsPreflightOptions: {
         allowOrigins: Cors.ALL_ORIGINS, // Restrict this to domains you trust
         allowMethods: Cors.ALL_METHODS, // Specify only the methods you need to allow
-        allowHeaders: Cors.DEFAULT_HEADERS, // Specify only the headers you need to allow
+        allowHeaders: [
+            'Content-Type',
+            'X-Amz-Date',
+            'Authorization',
+            'X-Api-Key',
+            'X-Amz-Security-Token'
+        ]
     },
 });
 
+/*
 // Create API key
-const apiKey = vfaAPI.addApiKey('CallbackApiKey', {
-    description: 'API Key for callback endpoint'
+const vfaApiKey = vfaAPI.addApiKey('VFA-ApiKey', {
+    description: 'API Key for VFA'
 });
 
 // Create usage plan
-const usagePlan = vfaAPI.addUsagePlan('CallbackUsagePlan', {
-    description: 'Usage plan for callback endpoint',
+const usagePlan = vfaAPI.addUsagePlan('VPA-UsagePlan', {
+    description: 'Usage plan for VFA endpoint',
     apiStages: [{
         api: vfaAPI,
         stage: vfaAPI.deploymentStage
@@ -69,13 +134,14 @@ const usagePlan = vfaAPI.addUsagePlan('CallbackUsagePlan', {
 });
 
 // Associate the API key with the usage plan
-usagePlan.addApiKey(apiKey);
+usagePlan.addApiKey(vfaApiKey);
+*/
 
 // Create DynamoDB for User Registration using cdk stack
 const userRegistrationTable = new aws_dynamodb.Table(dbStack, "UserRegistration", {
     partitionKey: { name: "email", type: aws_dynamodb.AttributeType.STRING },
     billingMode: aws_dynamodb.BillingMode.PAY_PER_REQUEST,
-    removalPolicy:  RemovalPolicy.DESTROY
+    removalPolicy: RemovalPolicy.DESTROY
 });
 
 const cognitoAuth = new CognitoUserPoolsAuthorizer(apiStack, "CognitoAuth", {
@@ -131,7 +197,36 @@ const dblambdaIntegration = new LambdaIntegration(backend.dbApiFunction.resource
 const ailambdaIntegration = new LambdaIntegration(backend.aiApiFunction.resources.lambda);
 const confylambdaIntegration = new LambdaIntegration(backend.confyApiFunction.resources.lambda);
 
-const authConfig = { authorizationType: AuthorizationType.COGNITO,authorizer: cognitoAuth}
+const authConfig = {
+    authorizationType: AuthorizationType.COGNITO,
+    authorizer: cognitoAuth,
+}
+
+const authConfigWithScope = {
+    authorizationType: AuthorizationType.COGNITO,
+    authorizer: cognitoAuth,
+    authorizationScopes: ["api/read"],
+    methodResponses: [
+        {
+            statusCode: '200',
+            responseParameters: {
+                'method.response.header.Access-Control-Allow-Origin': true
+            },
+            responseModels: {
+                'application/json': Model.EMPTY_MODEL
+            }
+        },
+        {
+            statusCode: '400',
+            responseParameters: {
+                'method.response.header.Access-Control-Allow-Origin': true
+            },
+            responseModels: {
+                'application/json': Model.ERROR_MODEL
+            }
+        }
+    ]
+}
 
 const dbPath = vfaAPI.root.addResource("db");
 dbPath.addMethod("GET", dblambdaIntegration, authConfig);
@@ -141,7 +236,6 @@ const aiPath = vfaAPI.root.addResource("ai");
 aiPath.addMethod("POST", ailambdaIntegration, authConfig);
 
 const confyPath = vfaAPI.root.addResource("confy");
-confyPath.addMethod("GET", confylambdaIntegration, authConfig);
 confyPath.addMethod("POST", confylambdaIntegration, authConfig);
 
 
@@ -161,13 +255,26 @@ const sqsIntegrationOptions: IntegrationOptions = {
             statusCode: '200',
             responseTemplates: {
                 'application/json': JSON.stringify({ message: 'Request Received' })
+            },
+            responseParameters: {
+                'method.response.header.Access-Control-Allow-Origin': "'*'"
+            }
+        },
+        {
+            selectionPattern: '.*Error.*',  // Match error patterns
+            statusCode: '400',
+            responseTemplates: {
+                'application/json': JSON.stringify({ 
+                    message: 'Error processing message',
+                    error: "$input.path('$.errorMessage')"
+                })
             }
         }
     ],
     requestTemplates: {
         'application/json': 'Action=SendMessage&MessageBody=$input.body'
     },
-    passthroughBehavior: PassthroughBehavior.NEVER,
+    passthroughBehavior: PassthroughBehavior.WHEN_NO_MATCH,
     requestParameters: {
         'integration.request.header.Content-Type': "'application/x-www-form-urlencoded'"
     }
@@ -180,6 +287,7 @@ const sqsIntegration = new Integration({
     options: sqsIntegrationOptions
 });
 
+/*
 callbackPath.addMethod('POST', sqsIntegration, {
     apiKeyRequired: true,
     methodResponses: [
@@ -191,6 +299,9 @@ callbackPath.addMethod('POST', sqsIntegration, {
         }
     ]
 });
+*/
+callbackPath.addMethod("POST", sqsIntegration, authConfigWithScope);
+
 
 const apiRestPolicy = new Policy(apiStack, "RestApiPolicy", {
     statements: [
@@ -231,6 +342,6 @@ backend.addOutput({
                 region: Stack.of(vfaAPI).region,
                 apiName: vfaAPI.restApiName,
             },
-        },
+        }
     },
 });
