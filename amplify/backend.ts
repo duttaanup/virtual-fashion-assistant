@@ -330,6 +330,12 @@ backend.dbApiFunction.addEnvironment("EMAIL_ID", EMAIL_ID);
 backend.sqsApiFunction.addEnvironment("EMAIL_ID", EMAIL_ID);
 backend.sqsApiFunction.addEnvironment("SUPPORT_EMAIL_ID", SUPPORT_EMAIL_ID);
 
+const envName = Stack.of(apiStack).node.tryGetContext('environment') || 'sandbox';
+backend.auth.resources.userPool.addDomain('vpaUserPoolDomain', {
+    cognitoDomain: {
+        domainPrefix: `vfa-${envName}-${apiStack.node.addr}`.toLowerCase().replace(/[^a-z0-9]/g, '-')
+    }
+})
 
 backend.addOutput({
     custom: {
