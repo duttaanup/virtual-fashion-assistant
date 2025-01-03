@@ -29,18 +29,18 @@ const backend = defineBackend({
 //add m2m application type app client on user pool
 
 // Add resource server to define custom scopes
-backend.auth.resources.userPool.addResourceServer('ResourceServer', {
+const vpaResourceScope = new cognito.ResourceServerScope({
+    scopeDescription: 'Read access to API',
+    scopeName: 'read'
+})
+
+const vfaUserPoolResourceServer = backend.auth.resources.userPool.addResourceServer('ResourceServer', {
     identifier: 'api',
-    scopes: [
-        {
-            scopeName: 'read',
-            scopeDescription: 'Read access to API'
-        },
-    ]
+    scopes: [ vpaResourceScope ]
 });
 
 
-backend.auth.resources.userPool.addClient('m2m-client', {
+const vfaUserPoolClient = backend.auth.resources.userPool.addClient('m2m-client', {
     generateSecret: true, // Enable client secret for M2M applications
     authFlows: {
         adminUserPassword: true,
@@ -60,13 +60,10 @@ backend.auth.resources.userPool.addClient('m2m-client', {
             authorizationCodeGrant: false
         },
         scopes: [
-            {
-                scopeName: 'api/read'
-            }
+            cognito.OAuthScope.resourceServer(vfaUserPoolResourceServer,vpaResourceScope)
         ]
     }
 });
-
 
 const apiStack = backend.createStack("vfa-api-stack");
 const dbStack = backend.createStack("vfa-db-stack");
@@ -205,7 +202,7 @@ const authConfig = {
 const authConfigWithScope = {
     authorizationType: AuthorizationType.COGNITO,
     authorizer: cognitoAuth,
-    authorizationScopes: ["api/read"],
+    //authorizationScopes: ["api/read"],
     methodResponses: [
         {
             statusCode: '200',
