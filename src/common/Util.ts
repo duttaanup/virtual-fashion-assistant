@@ -4,6 +4,7 @@ export enum UserStateEnum {
     IMAGE_SELECTED = "Image Selected",
     GARMENT_SELECTED = "Garment Selected",
     IMAGE_PROCESSED = "Image Processed",
+    IMAGE_PROCESSING = "Image Processing"
 }
 
 export enum ProcessActionEnum {

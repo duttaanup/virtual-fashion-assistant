@@ -3,8 +3,10 @@ import { BreadcrumbGroup, Button, CollectionPreferences, Container, Header, Pagi
 import { AppApi } from "../common/AppApi";
 import { StorageImage } from '@aws-amplify/ui-react-storage';
 import { useEffect, useState } from "react";
-import { AppUtility, ProcessActionEnum } from "../common/Util";
+import { AppUtility, ProcessActionEnum, UserStateEnum , ProcessActionTypeEnum} from "../common/Util";
+import outputs from "../../amplify_outputs.json";
 
+const bucketName = outputs.storage.bucket_name;
 export default function Register() {
     const [userList, setUserList] = useState([]);
     const [filterUserList, setFilterUserList] = useState([]);
@@ -111,6 +113,27 @@ export default function Register() {
         setIsProcessedImageVisible(true);
     }
 
+    const initProcess = async (item) => {
+        setIsLoading(true)
+        let tempUser = item;
+        tempUser.process_state = UserStateEnum.IMAGE_PROCESSING;
+        tempUser.update_on = new Date().toISOString();
+        await AppApi.dbPostOperation({
+            "action": ProcessActionEnum.UPDATE_USER,
+            "action_type": ProcessActionTypeEnum.SELECTED_USER_IMAGE,
+            "data": tempUser
+        })
+
+        AppApi.confyOperation({
+            "model_s3_uri": `s3://${bucketName}/${item.selected_image}`,
+            "garment_s3_uri": `s3://${bucketName}/garments/${item.selected_garment}`,
+            "output_bucket_name": bucketName,
+            "email_id": item.email
+        })
+        await getUsers();
+        setIsLoading(false)
+    }
+
     const advanceFilter = (detail) => {
         const query = detail;
         const queryTokens = detail.tokenGroups;
@@ -176,11 +199,12 @@ export default function Register() {
                     },
                     {
                         id: "action",
-                        minWidth: 120,
+                        minWidth: 130,
                         header: "",
                         cell: e => (<SpaceBetween size="s" direction="horizontal">
                             <Button iconName="user-profile-active" onClick={() => { showSelectedImage(e) }} disabled={e.selected_image == ""} />
                             <Button iconName="map" onClick={() => { showSelectedGarment(e) }} disabled={e.selected_garment == ""} />
+                            <Button iconName="settings" onClick={() => { initProcess(e) }} disabled={e.selected_garment == "" || e.selected_image == ""} />
                             <Button iconName="full-screen" onClick={() => { showSelectedProcessedImage(e) }} disabled={e.processed_image == ""} />
                             <Button iconName="send" onClick={() => { sendMail(e) }} disabled={e.processed_image == ""} />
                         </SpaceBetween>),
@@ -292,7 +316,7 @@ export default function Register() {
             <Modal visible={isGarmentVisible} onDismiss={() => {
                 setIsGarmentVisible(false)
             }}>
-                <img width="100%" src={`./garments/${userSelectedGarment}`} />
+                <StorageImage alt="alt text" path={`garments/${userSelectedGarment}`} />
             </Modal>
 
             <Modal visible={isProcessedImageVisible} onDismiss={() => {

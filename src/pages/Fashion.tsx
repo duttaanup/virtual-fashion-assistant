@@ -5,8 +5,11 @@ import { garmentList } from "../common";
 import { AppApi } from "../common/AppApi";
 import { AppUtility, ProcessActionEnum, ProcessActionTypeEnum, UserStateEnum } from "../common/Util";
 import { uploadData } from 'aws-amplify/storage';
+import { StorageImage } from "@aws-amplify/ui-react-storage";
+import outputs from "../../amplify_outputs.json";
 
 let VIDEO_STREAM = null;
+const bucketName = outputs.storage.bucket_name;
 
 export default function Fashion() {
     const [activeStepIndex, setActiveStepIndex] = useState(0);
@@ -159,7 +162,7 @@ export default function Fashion() {
 
         let tempUser = user;
         tempUser.selected_image = uploadFilePath;
-        tempUser.gender = gender;
+        tempUser.gender = output;
         tempUser.process_state = UserStateEnum.IMAGE_SELECTED;
         tempUser.update_on = new Date().toISOString();
 
@@ -234,7 +237,13 @@ export default function Fashion() {
                 "action_type": ProcessActionTypeEnum.SELECTED_USER_GARMENT,
                 "data": tempUser
             })
-            await AppApi.confyOperation(tempUser)
+            
+            await AppApi.confyOperation({
+                "model_s3_uri": `s3://${bucketName}/${user.selected_image}`,
+                "garment_s3_uri": `s3://${bucketName}/garments/${user.selected_garment}`,
+                "output_bucket_name": bucketName,
+                "email_id": user.email
+            })
             alert("Thank you. Will send details over mail once completed")
             resetAll();
         } else {
@@ -371,7 +380,7 @@ export default function Fashion() {
                                         sections: [
                                             {
                                                 id: "image_id",
-                                                content: item => (<img src={`./garments/${item.image_id}`} width="100%" />),
+                                                content: item => (<StorageImage alt="alt text" path={`garments/${item.image_id}`} />),
                                             },
                                         ]
                                     }}
