@@ -4,7 +4,6 @@ import { AppApi } from "../common/AppApi";
 import { StorageImage } from '@aws-amplify/ui-react-storage';
 import { useEffect, useState } from "react";
 import { AppUtility, ProcessActionEnum, UserStateEnum, ProcessActionTypeEnum } from "../common/Util";
-import { onMessageReceived, onMessageActionTaken, MessageEvent } from 'aws-amplify/in-app-messaging';
 import outputs from "../../amplify_outputs.json";
 
 const bucketName = outputs.storage.bucket_name;
@@ -23,11 +22,6 @@ function Register() {
     const [userSelectedImagePath, setUserSelectedImagePath] = useState("");
     const [userSelectedGarment, setUserSelectedGarment] = useState("");
     const [userSelectedProcessedImage, setUserSelectedProcessedImage] = useState("");
-    const [notification, setNotification] = useState<string | null>(null);
-
-    const myMessageReceivedHandler = (message) => {
-        console.log(message)
-    };
 
     const calculatePagination = (productList) => {
         if (productList != null) {
@@ -63,29 +57,6 @@ function Register() {
         setCurrentPageIndex(1);
     }, [filterUserList, userList, pageSize])
 
-    useEffect(() => {
-        // Subscribe to in-app messages
-        const messageSubscription = onMessageReceived(async (message: MessageEvent) => {
-            console.log('Received message:', message);
-            setNotification(message.content.body);
-
-            // Auto dismiss after 5 seconds
-            setTimeout(() => {
-                setNotification(null);
-            }, 5000);
-        });
-
-        // Handle message actions
-        const actionSubscription = onMessageActionTaken(async (action) => {
-            console.log('Message action:', action);
-        });
-
-        // Cleanup subscriptions
-        return () => {
-            messageSubscription.unsubscribe();
-            actionSubscription.unsubscribe();
-        };
-    }, [])
 
     const getUsers = async () => {
         const userList = await AppApi.dbGetOperation();

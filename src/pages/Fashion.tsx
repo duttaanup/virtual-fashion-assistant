@@ -233,7 +233,6 @@ function Fashion() {
     const onSetupSubmition = async () => {
         if (selectedItems.length > 0) {
             setIsLoadingNext(true)
-            console.log(user, selectedItems)
             let tempUser = user;
             tempUser.selected_garment = selectedItems[0].image_id;
             tempUser.process_state = UserStateEnum.GARMENT_SELECTED;
