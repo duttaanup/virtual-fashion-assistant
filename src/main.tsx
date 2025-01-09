@@ -20,7 +20,7 @@ Amplify.configure({
   },
 });
 
-await Analytics.enable();
+Analytics.enable();
 
 initializeInAppMessaging();
 
