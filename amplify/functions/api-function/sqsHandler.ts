@@ -12,7 +12,6 @@ export const handler: SQSHandler = async (event: SQSEvent) => {
     for (const record of event.Records) {
       // Parse the message body
       const messageBody = JSON.parse(record.body);
-
       // Process your message here
       console.log('Processing message:', messageBody);
       if (messageBody.action == "Image_Processed") {
@@ -49,7 +48,7 @@ async function processMessage(messageBody: any) {
   const s3 = new S3();
   const s3Params = {
     Bucket: S3_BUCKET,
-    Key: messageBody.user_data.processed_image,
+    Key: messageBody.user_data.s3_key,
   };
   const s3Data = await s3.getObject(s3Params).promise();
   const base64Data = s3Data.Body.toString('base64');
@@ -74,7 +73,7 @@ async function processMessage(messageBody: any) {
     },
     ExpressionAttributeValues: {
       ":process_state": "ImageProcessed",
-      ":processed_image": messageBody.user_data.processed_image,
+      ":processed_image": messageBody.user_data.s3_key,
       ":update_on": new Date().toISOString()
     },
     ReturnValues: "ALL_NEW",
