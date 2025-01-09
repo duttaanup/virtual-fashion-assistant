@@ -86,18 +86,22 @@ async function postActions(event) {
         Key: {
           email: body.data.email,
         },
-        UpdateExpression: "set #process_state = :process_state , #selected_image = :selected_image , #update_on = :update_on , #gender = :gender",
+        UpdateExpression: "set #process_state = :process_state , #selected_image = :selected_image , #update_on = :update_on , #gender = :gender , #processed_image = :processed_image , #processed_video = :processed_video",
         ExpressionAttributeNames: {
           "#process_state": "process_state",
           "#selected_image": "selected_image",
           "#update_on": "update_on",
-          "#gender": "gender"
+          "#gender": "gender",
+          "#processed_image": "processed_image",
+          "#processed_video":"processed_video"
         },
         ExpressionAttributeValues: {
           ":process_state": body.data.process_state,
           ":selected_image": body.data.selected_image,
           ":update_on": body.data.update_on,
-          ":gender": body.data.gender
+          ":gender": body.data.gender,
+          ":processed_image": "",
+          ":processed_video": ""
         },
         ReturnValues: "ALL_NEW",
       };

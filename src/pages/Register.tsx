@@ -3,11 +3,12 @@ import { BreadcrumbGroup, Button, CollectionPreferences, Container, Header, Pagi
 import { AppApi } from "../common/AppApi";
 import { StorageImage } from '@aws-amplify/ui-react-storage';
 import { useEffect, useState } from "react";
-import { AppUtility, ProcessActionEnum, UserStateEnum , ProcessActionTypeEnum} from "../common/Util";
+import { AppUtility, ProcessActionEnum, UserStateEnum, ProcessActionTypeEnum } from "../common/Util";
+import { onMessageReceived, onMessageActionTaken, MessageEvent } from 'aws-amplify/in-app-messaging';
 import outputs from "../../amplify_outputs.json";
 
 const bucketName = outputs.storage.bucket_name;
-export default function Register() {
+function Register() {
     const [userList, setUserList] = useState([]);
     const [filterUserList, setFilterUserList] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -22,6 +23,11 @@ export default function Register() {
     const [userSelectedImagePath, setUserSelectedImagePath] = useState("");
     const [userSelectedGarment, setUserSelectedGarment] = useState("");
     const [userSelectedProcessedImage, setUserSelectedProcessedImage] = useState("");
+    const [notification, setNotification] = useState<string | null>(null);
+
+    const myMessageReceivedHandler = (message) => {
+        console.log(message)
+    };
 
     const calculatePagination = (productList) => {
         if (productList != null) {
@@ -56,6 +62,30 @@ export default function Register() {
         calculatePagination(filterUserList);
         setCurrentPageIndex(1);
     }, [filterUserList, userList, pageSize])
+
+    useEffect(() => {
+        // Subscribe to in-app messages
+        const messageSubscription = onMessageReceived(async (message: MessageEvent) => {
+            console.log('Received message:', message);
+            setNotification(message.content.body);
+
+            // Auto dismiss after 5 seconds
+            setTimeout(() => {
+                setNotification(null);
+            }, 5000);
+        });
+
+        // Handle message actions
+        const actionSubscription = onMessageActionTaken(async (action) => {
+            console.log('Message action:', action);
+        });
+
+        // Cleanup subscriptions
+        return () => {
+            messageSubscription.unsubscribe();
+            actionSubscription.unsubscribe();
+        };
+    }, [])
 
     const getUsers = async () => {
         const userList = await AppApi.dbGetOperation();
@@ -204,8 +234,8 @@ export default function Register() {
                         cell: e => (<SpaceBetween size="s" direction="horizontal">
                             <Button iconName="user-profile-active" onClick={() => { showSelectedImage(e) }} disabled={e.selected_image == ""} />
                             <Button iconName="map" onClick={() => { showSelectedGarment(e) }} disabled={e.selected_garment == ""} />
-                            <Button iconName="settings" onClick={() => { initProcess(e) }} disabled={e.selected_garment == "" || e.selected_image == ""} />
                             <Button iconName="full-screen" onClick={() => { showSelectedProcessedImage(e) }} disabled={e.processed_image == ""} />
+                            <Button iconName="settings" onClick={() => { initProcess(e) }} disabled={e.selected_garment == "" || e.selected_image == ""} />
                             <Button iconName="send" onClick={() => { sendMail(e) }} disabled={e.processed_image == ""} />
                         </SpaceBetween>),
                     }
@@ -329,3 +359,5 @@ export default function Register() {
     );
 
 }
+
+export default Register;

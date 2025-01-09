@@ -86,7 +86,6 @@ export const AppApi = {
                 }
             });
             const response = await restOperation.response;
-            console.log('GET call succeeded: ', response);
         } catch (error) {
             console.log('GET call failed: ', JSON.parse(error.response.body));
         }

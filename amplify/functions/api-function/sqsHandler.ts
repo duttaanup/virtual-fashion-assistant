@@ -1,11 +1,15 @@
 //@ts-nocheck
 import { SQSEvent, SQSHandler } from 'aws-lambda';
-import { DynamoDB, SES, S3 } from "aws-sdk";
+import { DynamoDB, SES, S3 , Pinpoint } from "aws-sdk";
 import { createMimeMessage } from "mimetext";
+
+const pinpoint = new Pinpoint();
 const USER_REGISTRATION_TABLE = process.env.USER_REGISTRATION_TABLE;
 const S3_BUCKET = process.env.S3_BUCKET;
 const EMAIL_ID = process.env.EMAIL_ID;
 const SUPPORT_EMAIL_ID = process.env.SUPPORT_EMAIL_ID;
+const PINPOINT_APPLICATION_ID = process.env.PINPOINT_APP_ID;
+
 
 export const handler: SQSHandler = async (event: SQSEvent) => {
   try {
@@ -72,7 +76,7 @@ async function processMessage(messageBody: any) {
       "#update_on": "update_on"
     },
     ExpressionAttributeValues: {
-      ":process_state": "ImageProcessed",
+      ":process_state": "Image Processed",
       ":processed_image": messageBody.user_data.s3_key,
       ":update_on": new Date().toISOString()
     },

@@ -1,6 +1,8 @@
 //@ts-nocheck
 import { Alert, Box, BreadcrumbGroup, Button, Cards, Container, FormField, Input, SegmentedControl, SpaceBetween, Wizard } from "@cloudscape-design/components";
 import { useEffect, useState } from "react";
+import { enable, record } from 'aws-amplify/analytics';
+import { syncMessages, } from 'aws-amplify/in-app-messaging';
 import { garmentList } from "../common";
 import { AppApi } from "../common/AppApi";
 import { AppUtility, ProcessActionEnum, ProcessActionTypeEnum, UserStateEnum } from "../common/Util";
@@ -11,7 +13,7 @@ import outputs from "../../amplify_outputs.json";
 let VIDEO_STREAM = null;
 const bucketName = outputs.storage.bucket_name;
 
-export default function Fashion() {
+function Fashion() {
     const [activeStepIndex, setActiveStepIndex] = useState(0);
     const [inputValue, setInputValue] = useState("");
     const [user, setUser] = useState(null);
@@ -119,6 +121,7 @@ export default function Fashion() {
         counter++;
         setImagecount(counter);
         setShowalert(false);
+        record({ name: 'capturePhoto' })
     }
     const selectCanvasImage = (detail) => {
         const canvas = document.getElementById(detail.target.id);
@@ -176,6 +179,7 @@ export default function Fashion() {
         setIsLoadingNext(false);
         stopCameraStreaming()
         setActiveStepIndex(nextStep);
+        record({ name: 'submitPhoto' })
     }
     const registerUser = async (nextStep) => {
         if (inputValue != "") {
@@ -192,6 +196,7 @@ export default function Fashion() {
             setUser(userPayload)
             setIsLoadingNext(false);
             setActiveStepIndex(nextStep);
+            record({ name: 'registerUser' })
         }
     }
     const controlNavigation = (detail) => {
@@ -208,8 +213,9 @@ export default function Fashion() {
             stopCameraStreaming();
             setActiveStepIndex(detail.requestedStepIndex);
         }
+        record({ name: 'controlNavigation' , attributes: {key: "page_id"}, metrics: {value: detail.requestedStepIndex}})
     }
-
+    
     const resetAll = () => {
         setActiveStepIndex(0);
         setInputValue("");
@@ -244,6 +250,7 @@ export default function Fashion() {
                 "output_bucket_name": bucketName,
                 "email_id": user.email
             })
+            record({ name: 'onSetupSubmition' })
             alert("Thank you. Will send details over mail once completed")
             resetAll();
         } else {
@@ -261,6 +268,14 @@ export default function Fashion() {
             stopCameraStreaming()
         }
     }, [activeStepIndex])
+
+    useEffect(() => {
+        const init = async () =>{
+            await enable()
+            syncMessages();
+        }
+        init();
+    },[])
 
     return (<Container fitHeight header={
         <BreadcrumbGroup
@@ -399,3 +414,5 @@ export default function Fashion() {
         />
     </Container>)
 }
+
+export default Fashion

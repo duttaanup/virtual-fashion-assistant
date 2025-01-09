@@ -84,6 +84,7 @@ export const AppUtility = {
             "selected_image": "",
             "selected_garment": "",
             "processed_image": "",
+            "processed_video":"",
             "gender": null,
             "create_on": new Date().toISOString(),
             "update_on": new Date().toISOString(),

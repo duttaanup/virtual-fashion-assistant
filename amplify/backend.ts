@@ -18,6 +18,7 @@ import { Policy, PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws
 import { dbApiFunction, aiApiFunction, confyApiFunction, sqsApiFunction } from "./functions/api-function/resource";
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
+import { CfnApp, CfnSegment } from 'aws-cdk-lib/aws-pinpoint';
 
 const EMAIL_ID = "no-reply@mysampledemo.site";
 const SUPPORT_EMAIL_ID = "duttanup@amazon.com";
@@ -36,7 +37,7 @@ const vpaResourceScope = new cognito.ResourceServerScope({
 
 const vfaUserPoolResourceServer = backend.auth.resources.userPool.addResourceServer('ResourceServer', {
     identifier: 'api',
-    scopes: [ vpaResourceScope ]
+    scopes: [vpaResourceScope]
 });
 
 
@@ -60,7 +61,7 @@ const vfaUserPoolClient = backend.auth.resources.userPool.addClient('m2m-client'
             authorizationCodeGrant: false
         },
         scopes: [
-            cognito.OAuthScope.resourceServer(vfaUserPoolResourceServer,vpaResourceScope)
+            cognito.OAuthScope.resourceServer(vfaUserPoolResourceServer, vpaResourceScope)
         ]
     }
 });
@@ -68,6 +69,7 @@ const vfaUserPoolClient = backend.auth.resources.userPool.addClient('m2m-client'
 const apiStack = backend.createStack("vfa-api-stack");
 const dbStack = backend.createStack("vfa-db-stack");
 const backendStack = backend.createStack("vfa-backend-stack");
+const inAppMessagingStack = backend.createStack("inAppMessaging-stack");
 
 // create sqs queue to accept request from APIGateway
 const sqsQueue = new aws_sqs.Queue(backendStack, "vfaQueue", {
@@ -182,6 +184,7 @@ backend.sqsApiFunction.resources.lambda.addToRolePolicy(
         resources: ["*"],
     })
 );
+
 // add s3 access for storage
 backend.storage.resources.bucket.grantReadWrite(backend.sqsApiFunction.resources.lambda);
 backend.storage.resources.bucket.grantReadWrite(backend.dbApiFunction.resources.lambda);
@@ -261,7 +264,7 @@ const sqsIntegrationOptions: IntegrationOptions = {
             selectionPattern: '.*Error.*',  // Match error patterns
             statusCode: '400',
             responseTemplates: {
-                'application/json': JSON.stringify({ 
+                'application/json': JSON.stringify({
                     message: 'Error processing message',
                     error: "$input.path('$.errorMessage')"
                 })
@@ -336,6 +339,31 @@ backend.auth.resources.userPool.addDomain('vpaUserPoolDomain', {
     }
 })
 
+// create a Pinpoint app
+const pinpoint = new CfnApp(inAppMessagingStack, "Pinpoint", {
+    name: "vfaPinpoint",
+});
+
+//create an IAM policy to allow interacting with Pinpoint in-app messaging
+const pinpointPolicy = new Policy(inAppMessagingStack, "PinpointPolicy", {
+    statements: [
+        new PolicyStatement({
+            actions: [
+                "mobiletargeting:GetInAppMessages",
+                "mobiletargeting:UpdateEndpoint",
+                "mobiletargeting:PutEvents",
+            ],
+            resources: [pinpoint.attrArn + "/*", pinpoint.attrArn],
+        }),
+    ],
+});
+
+// apply the policy to the authenticated and unauthenticated roles
+backend.auth.resources.authenticatedUserIamRole.attachInlinePolicy(pinpointPolicy);
+backend.auth.resources.unauthenticatedUserIamRole.attachInlinePolicy(pinpointPolicy);
+
+backend.sqsApiFunction.addEnvironment("PINPOINT_APP_ID", pinpoint.ref);
+
 backend.addOutput({
     custom: {
         API: {
@@ -346,4 +374,10 @@ backend.addOutput({
             },
         }
     },
+    analytics:{
+        amazon_pinpoint:{
+            aws_region: Stack.of(pinpoint).region,
+            app_id: pinpoint.ref
+        }
+    }
 });

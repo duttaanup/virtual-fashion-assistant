@@ -1,12 +1,13 @@
 import { AppLayout, Container, ContentLayout, Header, TopNavigation } from "@cloudscape-design/components";
 import { Authenticator } from "@aws-amplify/ui-react";
 import { Routes, Route, HashRouter } from 'react-router-dom';
+import { withInAppMessaging } from '@aws-amplify/ui-react-notifications';
 import Home from "./pages/Home";
 import Register from "./pages/Register";
 import Fashion from "./pages/Fashion";
 const Router = HashRouter;
 
-export default function App() {
+function App() {
   return (
     <Authenticator hideSignUp={true}>
       {({ signOut, user }) => (
@@ -75,3 +76,5 @@ export default function App() {
     </Authenticator>
   );
 }
+
+export default withInAppMessaging(App);
