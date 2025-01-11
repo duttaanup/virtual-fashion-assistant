@@ -44,13 +44,13 @@ function Register() {
         if (users) {
             users.map((item) => {
                 option.push({ propertyKey: "email", value: item.email });
-                if(!states.includes(item.process_state))
+                if (!states.includes(item.process_state))
                     states.push(item.process_state)
             })
         } else {
             userList.map((item) => {
                 option.push({ propertyKey: "email", value: item.email })
-                if(!states.includes(item.process_state))
+                if (!states.includes(item.process_state))
                     states.push(item.process_state)
             })
         }
@@ -146,16 +146,21 @@ function Register() {
     const advanceFilter = (detail) => {
         const query = detail;
         const queryTokens = detail.tokenGroups;
-        console.log(query, queryTokens)
         if (queryTokens.length > 0) {
             const userEmails = queryTokens.map((token) => (token.propertyKey == "email" ? token.value : null)).filter((token) => token !== null);
             const states = queryTokens.map((token) => (token.propertyKey == "process_state" ? token.value : null)).filter((token) => token !== null);
             let filteredUserList
-            if (query.operation == "and")
-                filteredUserList = userList.filter((item) => userEmails.includes(item.email) && states.includes(item.process_state));
-            else
-                filteredUserList = userList.filter((item) => userEmails.includes(item.email) || states.includes(item.process_state));
-
+            if (query.tokenGroups.length == 2) {
+                if (query.operation == "and")
+                    filteredUserList = userList.filter((item) => userEmails.includes(item.email) && states.includes(item.process_state));
+                else
+                    filteredUserList = userList.filter((item) => userEmails.includes(item.email) || states.includes(item.process_state));
+            } else {
+                if(userEmails.length > 0)
+                    filteredUserList = userList.filter((item) => userEmails.includes(item.email));
+                if(states.length > 0)
+                    filteredUserList = userList.filter((item) => states.includes(item.process_state));
+            }
             setFilterUserList(filteredUserList);
         } else {
             setFilterUserList(userList)
@@ -262,32 +267,49 @@ function Register() {
                         ]}
                         query={query}
                         filteringOptions={filteringOption}
-                        i18nStrings={
-                            {
-                                filteringAriaLabel: "your choice",
-                                dismissAriaLabel: "Dismiss",
-                                clearAriaLabel: "Clear",
-                                clearFiltersText: "Clear filters",
-                                groupPropertiesText: "Attributes",
-                                filteringPlaceholder: "Find Solutions",
-                                groupValuesText: "Values",
-                                operatorText: "Operator",
-                                valueText: "Value",
-                                cancelActionText: "Cancel",
-                                applyActionText: "Apply",
-                                operationAndText: "and",
-                                operationOrText: "or",
-                                operatorLessText: "Less than",
-                                operatorLessOrEqualText: "Less than or equal",
-                                operatorGreaterText: "Greater than",
-                                operatorGreaterOrEqualText: "Greater than or equal",
-                                operatorContainsText: "Contains",
-                                operatorDoesNotContainText: "Does not contain",
-                                operatorEqualsText: "Equals",
-                                operatorDoesNotEqualText: "Does not equal",
-                                editTokenHeader: "Edit filter"
-                            }
-                        }
+                        i18nStrings={{
+                            filteringAriaLabel: "your choice",
+                            dismissAriaLabel: "Dismiss",
+                            filteringOperatorLessThan: "Less than",
+                            filteringOperatorLessThanOrEqualTo: "Less than or equal",
+                            filteringOperatorGreaterThan: "Greater than",
+                            filteringOperatorGreaterThanOrEqualTo: "Greater than or equal",
+                            filteringOperatorContains: "Contains",
+                            filteringOperatorDoesNotContain: "Does not contain",
+                            filteringOperatorEquals: "Equals",
+                            filteringOperatorDoesNotEqual: "Does not equal",
+                            editTokenHeader: "Edit filter",
+                            groupValuesLabel: "Group values",
+                            propertyLabel: "Property",
+                            operatorLabel: "Operator",
+                            valueLabel: "Value",
+                            cancelActionText: "Cancel",
+                            applyActionText: "Apply",
+                            allPropertiesLabel: "All properties",
+                            tokenLimitShowMore: "Show more",
+                            tokenLimitShowFewer: "Show fewer",
+                            clearFilters: "Clear filters",
+                            removeTokenButtonAriaLabel: token => `Remove ${token.property} ${token.operator} ${token.value}`,
+                            enteredTextLabel: text => `Use: "${text}"`,
+                            clearAriaLabel: "Clear",
+                            clearFiltersText: "Clear filters",
+                            groupPropertiesText: "Attributes",
+                            filteringPlaceholder: "Find Solutions",
+                            groupValuesText: "Values",
+                            operatorText: "Operator",
+                            valueText: "Value",
+                            operationAndText: "and",
+                            operationOrText: "or",
+                            operatorLessText: "Less than",
+                            operatorLessOrEqualText: "Less than or equal",
+                            operatorGreaterText: "Greater than",
+                            operatorGreaterOrEqualText: "Greater than or equal",
+                            operatorContainsText: "Contains",
+                            operatorDoesNotContainText: "Does not contain",
+                            operatorEqualsText: "Equals",
+                            operatorDoesNotEqualText: "Does not equal",
+                        }}
+
                     />
                 }
                 header={
