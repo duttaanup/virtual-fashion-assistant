@@ -43,10 +43,12 @@ function Register() {
         if (users) {
             users.map((item) => {
                 option.push({ propertyKey: "email", value: item.email })
+                option.push({ propertyKey: "process_state", value: item.process_state })
             })
         } else {
             userList.map((item) => {
                 option.push({ propertyKey: "email", value: item.email })
+                option.push({ propertyKey: "process_state", value: item.process_state })
             })
         }
         setFilteringOption(option)
@@ -138,10 +140,16 @@ function Register() {
     const advanceFilter = (detail) => {
         const query = detail;
         const queryTokens = detail.tokenGroups;
-        console.log(queryTokens)
+        console.log(query, queryTokens)
         if (queryTokens.length > 0) {
             const userEmails = queryTokens.map((token) => (token.propertyKey == "email" ? token.value : null)).filter((token) => token !== null);
-            const filteredUserList = userList.filter((item) => userEmails.includes(item.email));
+            const states = queryTokens.map((token) => (token.propertyKey == "process_state" ? token.value : null)).filter((token) => token !== null);
+            let filteredUserList
+            if (query.operation == "and")
+                filteredUserList = userList.filter((item) => userEmails.includes(item.email) && states.includes(item.process_state));
+            else
+                filteredUserList = userList.filter((item) => userEmails.includes(item.email) || states.includes(item.process_state));
+
             setFilterUserList(filteredUserList);
         } else {
             setFilterUserList(userList)
@@ -236,6 +244,13 @@ function Register() {
                                 operators: ["="],
                                 propertyLabel: "Email",
                                 groupValuesLabel: "Email values",
+                                group: "key"
+                            },
+                            {
+                                key: "process_state",
+                                operators: ["="],
+                                propertyLabel: "State",
+                                groupValuesLabel: "States",
                                 group: "key"
                             }
                         ]}
