@@ -22,6 +22,7 @@ import { CfnApp, CfnSegment } from 'aws-cdk-lib/aws-pinpoint';
 
 const EMAIL_ID = "no-reply@mysampledemo.site";
 const SUPPORT_EMAIL_ID = "duttanup@amazon.com";
+const COMFY_SERVER = "http://vfa-nlb-02fd1bad54324ae5.elb.ap-south-1.amazonaws.com"
 
 const backend = defineBackend({
     auth, dbApiFunction, aiApiFunction, confyApiFunction, storage, sqsApiFunction
@@ -332,6 +333,9 @@ backend.sqsApiFunction.addEnvironment("S3_BUCKET", backend.storage.resources.buc
 backend.dbApiFunction.addEnvironment("EMAIL_ID", EMAIL_ID);
 backend.sqsApiFunction.addEnvironment("EMAIL_ID", EMAIL_ID);
 backend.sqsApiFunction.addEnvironment("SUPPORT_EMAIL_ID", SUPPORT_EMAIL_ID);
+
+
+backend.confyApiFunction.addEnvironment("COMFY_SERVER", COMFY_SERVER);
 
 backend.auth.resources.userPool.addDomain('vpaUserPoolDomain', {
     cognitoDomain: {

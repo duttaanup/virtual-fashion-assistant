@@ -1,10 +1,12 @@
 import type { APIGatewayProxyHandler } from "aws-lambda";
 
+const COMFY_SERVER = process.env.COMFY_SERVER;
+
 export const handler: APIGatewayProxyHandler = async (event) => {
   console.log("event", event);
   // Make a post call to the API
   try{
-    const response = await fetch("http://172.31.22.98:8080/vton", {
+    const response = await fetch(`${COMFY_SERVER}/vton`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
