@@ -40,17 +40,23 @@ function Register() {
 
     const getFilteringOption = (users) => {
         const option = [];
+        const states = [];
         if (users) {
             users.map((item) => {
-                option.push({ propertyKey: "email", value: item.email })
-                option.push({ propertyKey: "process_state", value: item.process_state })
+                option.push({ propertyKey: "email", value: item.email });
+                if(!states.includes(item.process_state))
+                    states.push(item.process_state)
             })
         } else {
             userList.map((item) => {
                 option.push({ propertyKey: "email", value: item.email })
-                option.push({ propertyKey: "process_state", value: item.process_state })
+                if(!states.includes(item.process_state))
+                    states.push(item.process_state)
             })
         }
+        states.map((item) => {
+            option.push({ propertyKey: "process_state", value: item })
+        })
         setFilteringOption(option)
     }
 
