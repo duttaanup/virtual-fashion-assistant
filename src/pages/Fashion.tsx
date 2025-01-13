@@ -149,12 +149,15 @@ function Fashion() {
     }
     const submitPhoto = async (nextStep) => {
         setIsLoadingNext(true);
+        // Gender Detection
+   
         const ai_response = await AppApi.aiOperation(selectedImage);
         const model_response = ai_response?.response?.output.message.content[0]
         const result = model_response.text.replace(/\n/g, "").replace("json", "").replace(/`/g, "");
         const output = JSON.parse(result);
         setGender(output)
         setSelectedGender(output.gender)
+        
 
         const uploadFilePath = `raw/${user.user_id}/${AppUtility.fileName()}`;
 
@@ -378,6 +381,11 @@ function Fashion() {
                                         { text: "Male", id: "male" },
                                         { text: "Female", id: "female", },
                                     ]}
+                                    onChange={(event) => {
+                                        setSelectedGender(event.detail.selectedId)
+                                        setSelectedItems([])
+                                        record({ name: 'onChangeGender', attributes: {key: "gender"}, metrics: {value: event.detail.selectedId}})
+                                    }}
                                 />
                                 <Cards
                                     entireCardClickable
