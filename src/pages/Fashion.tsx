@@ -31,7 +31,10 @@ function Fashion() {
         navigator.mediaDevices.getUserMedia({
             video: true,
             width: { ideal: 4096 },
-            height: { ideal: 2160 }
+            height: { ideal: 2160 },
+            facingMode:{
+                exact: 'environment'
+            }
         })
             .then((stream) => {
                 VIDEO_STREAM = stream
