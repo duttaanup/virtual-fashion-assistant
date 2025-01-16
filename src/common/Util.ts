@@ -91,3 +91,13 @@ export const AppUtility = {
         }
     }
 }
+
+export const garmentListFn = () => {
+    const garmentCount = 9
+    let list = [];
+    for (let i = 1; i <= garmentCount; i++) {
+        list.push({ "gender" : "male" , "image_id": `m_${i}.jpg` , "alt" : `male garment - ${i}`});
+        list.push({ "gender" : "female" , "image_id": `f_${i}.jpg`, "alt" : `female garment - ${i}` });
+    }
+    return list;
+}

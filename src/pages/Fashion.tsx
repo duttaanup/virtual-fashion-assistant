@@ -3,15 +3,15 @@ import { Alert, Box, BreadcrumbGroup, Button, Cards, Container, FormField, Input
 import { useEffect, useState } from "react";
 import { enable, record } from 'aws-amplify/analytics';
 import { syncMessages, } from 'aws-amplify/in-app-messaging';
-import { garmentList } from "../common";
 import { AppApi } from "../common/AppApi";
-import { AppUtility, ProcessActionEnum, ProcessActionTypeEnum, UserStateEnum } from "../common/Util";
+import { AppUtility, ProcessActionEnum, ProcessActionTypeEnum, UserStateEnum, garmentListFn } from "../common/Util";
 import { uploadData } from 'aws-amplify/storage';
 import { StorageImage } from "@aws-amplify/ui-react-storage";
 import outputs from "../../amplify_outputs.json";
 
 let VIDEO_STREAM = null;
 const bucketName = outputs.storage.bucket_name;
+const garmentList = garmentListFn();
 
 function Fashion() {
     const [activeStepIndex, setActiveStepIndex] = useState(0);
@@ -147,46 +147,37 @@ function Fashion() {
         setSelectedimage(dataUrl);
         setShowalert(false);
     }
-    const submitPhoto = async (nextStep) => {
-        setIsLoadingNext(true);
+    const submitPhoto = async () => {
         // Gender Detection
-   
         const ai_response = await AppApi.aiOperation(selectedImage);
         const model_response = ai_response?.response?.output.message.content[0]
         const result = model_response.text.replace(/\n/g, "").replace("json", "").replace(/`/g, "");
         const output = JSON.parse(result);
         setGender(output)
         setSelectedGender(output.gender)
-        
-
         const uploadFilePath = `raw/${user.user_id}/${AppUtility.fileName()}`;
-
         await uploadData({
             path: uploadFilePath,
             data: AppUtility.dataURLtoBlob(selectedImageBase64),
         });
-
         let tempUser = user;
         tempUser.selected_image = uploadFilePath;
         tempUser.gender = output;
         tempUser.process_state = UserStateEnum.IMAGE_SELECTED;
         tempUser.update_on = new Date().toISOString();
-
         await AppApi.dbPostOperation({
             "action": ProcessActionEnum.UPDATE_USER,
             "action_type": ProcessActionTypeEnum.SELECTED_USER_IMAGE,
             "data": tempUser
         })
-
         setUser(tempUser)
-        setIsLoadingNext(false);
         stopCameraStreaming()
-        setActiveStepIndex(nextStep);
         record({ name: 'submitPhoto' })
+        return tempUser;
     }
-    const registerUser = async (nextStep) => {
+
+    const registerUser = async () => {
         if (inputValue != "") {
-            setIsLoadingNext(true);
             const userId = AppUtility.guid()
             let userPayload = AppUtility.generateUserPayload();
             userPayload.email = inputValue;
@@ -196,29 +187,25 @@ function Fashion() {
                 "data": userPayload
             }
             await AppApi.dbPostOperation(payload);
-            setUser(userPayload)
-            setIsLoadingNext(false);
-            setActiveStepIndex(nextStep);
+            setUser(userPayload);
             record({ name: 'registerUser' })
         }
     }
-    const controlNavigation = (detail) => {
+
+    const controlNavigation = async (detail) => {
         if (detail.requestedStepIndex == 1) {
-            registerUser(detail.requestedStepIndex);
-        }
-        else if (detail.requestedStepIndex == 2) {
-            if (selectedImage == null)
-                setShowalert(true)
-            else {
-                submitPhoto(detail.requestedStepIndex)
+            if (selectedItems.length == 0) {
+                alert('Select Garment')
+            } else {
+                setIsLoadingNext(true);
+                await registerUser();
+                setIsLoadingNext(false);
+                setActiveStepIndex(detail.requestedStepIndex);
             }
-        } else {
-            stopCameraStreaming();
-            setActiveStepIndex(detail.requestedStepIndex);
         }
-        record({ name: 'controlNavigation' , attributes: {key: "page_id"}, metrics: {value: detail.requestedStepIndex}})
+        record({ name: 'controlNavigation', attributes: { key: "page_id" }, metrics: { value: detail.requestedStepIndex } })
     }
-    
+
     const resetAll = () => {
         setActiveStepIndex(0);
         setInputValue("");
@@ -234,9 +221,11 @@ function Fashion() {
     }
 
     const onSetupSubmition = async () => {
-        if (selectedItems.length > 0) {
+        if (selectedImage == null)
+            setShowalert(true)
+        else {
             setIsLoadingNext(true)
-            let tempUser = user;
+            let tempUser = await submitPhoto();
             tempUser.selected_garment = selectedItems[0].image_id;
             tempUser.process_state = UserStateEnum.GARMENT_SELECTED;
             tempUser.update_on = new Date().toISOString();
@@ -245,20 +234,18 @@ function Fashion() {
                 "action_type": ProcessActionTypeEnum.SELECTED_USER_GARMENT,
                 "data": tempUser
             })
-            
             await AppApi.confyOperation({
-                "model_s3_uri": `s3://${bucketName}/${user.selected_image}`,
-                "garment_s3_uri": `s3://${bucketName}/garments/${user.selected_garment}`,
+                "model_s3_uri": `s3://${bucketName}/${tempUser.selected_image}`,
+                "garment_s3_uri": `s3://${bucketName}/garments/${tempUser.selected_garment}`,
                 "output_bucket_name": bucketName,
-                "email_id": user.email
+                "email_id": tempUser.email
             })
             record({ name: 'onSetupSubmition' })
             alert("Thank you. Will send details over mail once completed")
             resetAll();
-        } else {
-            alert("Please select at least one garment.");
         }
     }
+
     useEffect(() => {
         setImagecount(1);
         if (activeStepIndex == 1)
@@ -272,12 +259,12 @@ function Fashion() {
     }, [activeStepIndex])
 
     useEffect(() => {
-        const init = async () =>{
+        const init = async () => {
             await enable()
             syncMessages();
         }
         init();
-    },[])
+    }, [])
 
     return (<Container fitHeight header={
         <BreadcrumbGroup
@@ -312,8 +299,7 @@ function Fashion() {
             activeStepIndex={activeStepIndex}
             steps={[
                 {
-                    title: "Participant Registration",
-                    description: "",
+                    title: "Choose Garment",
                     content: (
                         <Container fitHeight>
                             <SpaceBetween size="l">
@@ -330,9 +316,48 @@ function Fashion() {
                                         }
                                     />
                                 </FormField>
+                                <hr />
+                                <SpaceBetween size="l" alignItems="center">
+                                    <SegmentedControl selectedId={selectedGender}
+                                        label="Default segmented control"
+                                        options={[
+                                            { text: "Male", id: "male", disabled: (inputValue == "") },
+                                            { text: "Female", id: "female", disabled: (inputValue == "") },
+                                        ]}
+                                        onChange={(event) => {
+                                            setSelectedGender(event.detail.selectedId)
+                                            setSelectedItems([])
+                                            record({ name: 'onChangeGender', attributes: { key: "gender" }, metrics: { value: event.detail.selectedId } })
+                                        }}
+                                    />
+                                    <Cards
+                                        entireCardClickable
+                                        selectionType="single"
+                                        selectedItems={selectedItems}
+                                        onSelectionChange={({ detail }) => setSelectedItems(detail?.selectedItems ?? [])}
+                                        ariaLabels={{
+                                            itemSelectionLabel: (e, t) => `select ${t.name}`,
+                                            selectionGroupLabel: "Item selection"
+                                        }}
+                                        cardDefinition={{
+                                            sections: [
+                                                {
+                                                    id: "image_id",
+                                                    content: item => (<StorageImage alt={item.alt} path={`garments/${item.image_id}`} />),
+                                                },
+                                            ]
+                                        }}
+                                        cardsPerRow={[
+                                            { cards: 1 },
+                                            { minWidth: 150, cards: 5 }
+                                        ]}
+                                        items={garmentList.filter(e => e.gender == selectedGender)}
+                                        loadingText="Loading resources"
+                                    />
+                                </SpaceBetween>
                             </SpaceBetween>
                         </Container>
-                    )
+                    ),
                 },
                 {
                     title: "Click a Photo",
@@ -370,53 +395,6 @@ function Fashion() {
                         </Container>
                     )
                 },
-                {
-                    title: "Choose Garment",
-                    content: (
-                        <Container fitHeight>
-                            <SpaceBetween size="l" alignItems="center">
-                                <SegmentedControl selectedId={selectedGender}
-                                    label="Default segmented control"
-                                    options={[
-                                        { text: "Male", id: "male" },
-                                        { text: "Female", id: "female", },
-                                    ]}
-                                    onChange={(event) => {
-                                        setSelectedGender(event.detail.selectedId)
-                                        setSelectedItems([])
-                                        record({ name: 'onChangeGender', attributes: {key: "gender"}, metrics: {value: event.detail.selectedId}})
-                                    }}
-                                />
-                                <Cards
-                                    entireCardClickable
-                                    selectionType="single"
-                                    selectedItems={selectedItems}
-                                    onSelectionChange={({ detail }) =>
-                                        setSelectedItems(detail?.selectedItems ?? [])
-                                    }
-                                    ariaLabels={{
-                                        itemSelectionLabel: (e, t) => `select ${t.name}`,
-                                        selectionGroupLabel: "Item selection"
-                                    }}
-                                    cardDefinition={{
-                                        sections: [
-                                            {
-                                                id: "image_id",
-                                                content: item => (<StorageImage alt="alt text" path={`garments/${item.image_id}`} />),
-                                            },
-                                        ]
-                                    }}
-                                    cardsPerRow={[
-                                        { cards: 1 },
-                                        { minWidth: 300, cards: 3 }
-                                    ]}
-                                    items={garmentList.filter(e => e.gender == selectedGender)}
-                                    loadingText="Loading resources"
-                                />
-                            </SpaceBetween>
-                        </Container>
-                    ),
-                }
             ]}
         />
     </Container>)
