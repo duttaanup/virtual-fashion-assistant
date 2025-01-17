@@ -14,7 +14,7 @@ function Register() {
     const [query, setQuery] = useState({ tokens: [], operation: "and" });
     const [filteringOption, setFilteringOption] = useState([]);
     const [currentPageIndex, setCurrentPageIndex] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(50);
     const [totalPages, setTotalPages] = useState(0);
     const [isImageVisible, setIsImageVisible] = useState(false);
     const [isGarmentVisible, setIsGarmentVisible] = useState(false);
@@ -340,11 +340,8 @@ function Register() {
                         pageSizePreference={{
                             title: "Page size",
                             options: [
-                                { value: 10, label: "10 resources" },
-                                { value: 20, label: "20 resources" },
-                                { value: 30, label: "30 resources" },
-                                { value: 40, label: "40 resources" },
-                                { value: 50, label: "50 resources" }
+                                { value: 50, label: "50 resources" },
+                                { value: 100, label: "100 resources" }
                             ]
                         }}
                     />
