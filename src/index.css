@@ -11,6 +11,13 @@
   height: auto;
   object-fit: contain;
 }
+
+.camera-angle-90{
+  transform: rotate(-90deg);
+  margin: 70px 0px;
+  height: 350px !important;
+}
+
 .camera-img{
   height: 1px;
   visibility: hidden;

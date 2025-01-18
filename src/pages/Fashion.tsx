@@ -25,6 +25,7 @@ function Fashion() {
     const [gender, setGender] = useState(null);
     const [isLoadingNext, setIsLoadingNext] = useState(false);
     const [selectedItems, setSelectedItems] = useState([]);
+    const [cameraOrientation, setCameraOrientation] = useState('portrait');
 
     const initializeCamera = () => {
         const video = document.getElementById('camera-feed');
@@ -32,9 +33,6 @@ function Fashion() {
             video: true,
             width: { ideal: 4096 },
             height: { ideal: 2160 },
-            facingMode:{
-                exact: 'environment'
-            }
         })
             .then((stream) => {
                 VIDEO_STREAM = stream
@@ -100,27 +98,42 @@ function Fashion() {
         const video = document.getElementById('camera-feed');
         const canvas = document.getElementById(`camera-canvas${counter}`);
         const img = document.getElementById(`camera-img-${counter}`);
+        const imgcanvas = document.createElement('canvas');
 
-        const context = canvas.getContext('2d');
         canvas.classList.remove("canvas-photo-hidden");
         canvas.classList.add("canvas-photo");
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        if ('ImageCapture' in window) {
-            const track = VIDEO_STREAM.getVideoTracks()[0];
-            const imageCapture = new ImageCapture(track);
-            const imgBlob = await imageCapture.takePhoto();
-            img.src = await AppUtility.blobToBase64(imgBlob);
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        imgcanvas.width = video.videoWidth;
+        imgcanvas.height = video.videoHeight;
+
+        const ctx = canvas.getContext('2d');
+        const imgcontext = imgcanvas.getContext('2d');
+
+        if (cameraOrientation == 'landscape') {
+            ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            imgcontext.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
         } else {
-            console.log("ImageCapture API not supported")
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const context = canvas.getContext('2d');
-            context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-            const data = canvas.toDataURL("image/jpeg");
-            img.src = data;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.drawImage(video, -canvas.width / 2, -canvas.height / 2);
+            ctx.restore();
+
+            imgcontext.clearRect(0, 0, canvas.width, canvas.height);
+            imgcontext.save();
+            imgcontext.translate(canvas.width / 2, canvas.height / 2);
+            imgcontext.rotate(-Math.PI / 2);
+            imgcontext.drawImage(video, -canvas.width / 2, -canvas.height / 2);
+            imgcontext.restore();
         }
+
+        const data = imgcanvas.toDataURL("image/jpeg");
+        img.src = data;
+
         counter++;
         setImagecount(counter);
         setShowalert(false);
@@ -195,6 +208,18 @@ function Fashion() {
         }
     }
 
+    const rotateCamera = () => {
+        const video = document.getElementById('camera-feed');
+        if (cameraOrientation == 'landscape') {
+            setCameraOrientation('portrait')
+            video.classList.add("camera-angle-90");
+        }
+        else {
+            setCameraOrientation('landscape');
+            video.classList.remove("camera-angle-90");
+        }
+
+    }
     const controlNavigation = async (detail) => {
         if (detail.requestedStepIndex == 1) {
             if (selectedItems.length == 0) {
@@ -368,8 +393,9 @@ function Fashion() {
                     content: (
                         <Container fitHeight>
                             <SpaceBetween size="l" alignItems="center">
-                                <video id="camera-feed" playsInline></video>
+                                <video id="camera-feed" className="camera-angle-90" playsInline></video>
                                 <SpaceBetween size="l" direction="horizontal">
+                                    <Button iconName="video-camera-on" onClick={() => { rotateCamera() }} >Rotate Camera</Button>
                                     <Button variant="primary" onClick={() => { capturePhoto() }} disabled={(imagecount > 5)}>Take a Photo</Button>
                                     <Button iconName="refresh" onClick={() => { clearAllCanvas() }} disabled={(imagecount <= 1)}>Clear Photo(s)</Button>
                                 </SpaceBetween>
@@ -388,7 +414,6 @@ function Fashion() {
                                     <img id="camera-img-4" className="camera-img" />
                                     <img id="camera-img-5" className="camera-img" />
                                 </SpaceBetween>
-
                                 {
                                     (imagecount > 1) && <Box color="text-body-secondary">Select a image to proceed</Box>
                                 }
