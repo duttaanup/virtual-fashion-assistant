@@ -26,6 +26,7 @@ function Fashion() {
     const [isLoadingNext, setIsLoadingNext] = useState(false);
     const [selectedItems, setSelectedItems] = useState([]);
     const [cameraOrientation, setCameraOrientation] = useState('portrait');
+    const [cameraRotation, setCameraRotation] = useState('Left');
 
     const initializeCamera = () => {
         const video = document.getElementById('camera-feed');
@@ -99,6 +100,7 @@ function Fashion() {
         const canvas = document.getElementById(`camera-canvas${counter}`);
         const img = document.getElementById(`camera-img-${counter}`);
         const imgcanvas = document.createElement('canvas');
+        const rotationFactor = (cameraRotation == 'Left') ? -1 : 1;
 
         canvas.classList.remove("canvas-photo-hidden");
         canvas.classList.add("canvas-photo");
@@ -121,6 +123,7 @@ function Fashion() {
         const ctx = canvas.getContext('2d');
         const imgcontext = imgcanvas.getContext('2d');
 
+        
         if (cameraOrientation == 'landscape') {
             ctx.drawImage(video, 0, 0, outputWidth, outputHeight);
             imgcontext.drawImage(video, 0, 0, outputWidth, outputHeight);
@@ -128,15 +131,22 @@ function Fashion() {
             ctx.clearRect(0, 0, outputWidth, outputHeight);
             ctx.save();
             ctx.translate(outputWidth / 2, outputHeight / 2,);
-            ctx.rotate(-Math.PI / 2);
-            ctx.drawImage(video, -outputHeight / 2, -outputWidth / 2);
+            ctx.rotate(rotationFactor * Math.PI / 2);
+            if(rotationFactor === -1)
+                ctx.drawImage(video, rotationFactor * outputHeight / 2, rotationFactor * outputWidth / 2);
+            else
+                ctx.drawImage(video, -rotationFactor * outputHeight / 2, -rotationFactor * outputWidth / 2);
+
             ctx.restore();
 
             imgcontext.clearRect(0, 0, outputWidth, outputHeight);
             imgcontext.save();
             imgcontext.translate(outputWidth / 2, outputHeight / 2);
-            imgcontext.rotate(-Math.PI / 2);
-            imgcontext.drawImage(video, -outputHeight / 2, -outputWidth / 2);
+            imgcontext.rotate(rotationFactor * Math.PI / 2);
+            if(rotationFactor === -1)
+                imgcontext.drawImage(video, rotationFactor * outputHeight / 2, rotationFactor * outputWidth / 2);
+            else
+                imgcontext.drawImage(video, -rotationFactor * outputHeight / 2, -rotationFactor * outputWidth / 2);
             imgcontext.restore();
         }
 
@@ -217,18 +227,24 @@ function Fashion() {
         }
     }
 
-    const rotateCamera = () => {
+    const rotateCamera = (side) => {
         const video = document.getElementById('camera-feed');
+        video.classList.remove("camera-rotate-left");
+        video.classList.remove("camera-rotate-right");
         if (cameraOrientation == 'landscape') {
             setCameraOrientation('portrait')
-            video.classList.add("camera-angle-90");
+            setCameraRotation(side);
+            if(side == "Left")
+                video.classList.add("camera-rotate-left");
+            else
+                video.classList.add("camera-rotate-right");
         }
         else {
             setCameraOrientation('landscape');
-            video.classList.remove("camera-angle-90");
         }
 
     }
+
     const controlNavigation = async (detail) => {
         if (detail.requestedStepIndex == 1) {
             if (selectedItems.length == 0) {
@@ -402,9 +418,10 @@ function Fashion() {
                     content: (
                         <Container fitHeight>
                             <SpaceBetween size="l" alignItems="center">
-                                <video id="camera-feed" className="camera-angle-90" playsInline></video>
+                                <video id="camera-feed" className="camera-rotate-left" playsInline></video>
                                 <SpaceBetween size="l" direction="horizontal">
-                                    <Button iconName="video-camera-on" onClick={() => { rotateCamera() }} >Rotate Camera</Button>
+                                    <Button iconName="video-camera-on" onClick={() => { rotateCamera('Left') }} >Rotate Left</Button>
+                                    <Button iconName="video-camera-on" onClick={() => { rotateCamera('Right') }} >Rotate Right</Button>
                                     <Button variant="primary" onClick={() => { capturePhoto() }} disabled={(imagecount > 5)}>Take a Photo</Button>
                                     <Button iconName="refresh" onClick={() => { clearAllCanvas() }} disabled={(imagecount <= 1)}>Clear Photo(s)</Button>
                                 </SpaceBetween>
