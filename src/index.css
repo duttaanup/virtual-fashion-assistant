@@ -19,8 +19,8 @@
 }
 
 .camera-img{
-  height: 1px;
-  visibility: hidden;
+  height: 100px;
+  visibility: visible;
 }
 
 .canvas-photo {

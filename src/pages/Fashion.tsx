@@ -103,31 +103,40 @@ function Fashion() {
         canvas.classList.remove("canvas-photo-hidden");
         canvas.classList.add("canvas-photo");
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-
-        imgcanvas.width = video.videoWidth;
-        imgcanvas.height = video.videoHeight;
+        let outputHeight = 0;
+        let outputWidth = 0;
+        if(cameraOrientation == 'landscape'){
+            outputHeight = video.videoHeight
+            outputWidth = video.videoWidth
+        }else{
+            outputHeight = video.videoWidth
+            outputWidth = video.videoHeight
+        }
+        
+        canvas.width = outputWidth;
+        canvas.height = outputHeight;
+        imgcanvas.width = outputWidth;
+        imgcanvas.height = outputHeight;
 
         const ctx = canvas.getContext('2d');
         const imgcontext = imgcanvas.getContext('2d');
 
         if (cameraOrientation == 'landscape') {
-            ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-            imgcontext.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            ctx.drawImage(video, 0, 0, outputWidth, outputHeight);
+            imgcontext.drawImage(video, 0, 0, outputWidth, outputHeight);
         } else {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, outputWidth, outputHeight);
             ctx.save();
-            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.translate(outputWidth / 2, outputHeight / 2,);
             ctx.rotate(-Math.PI / 2);
-            ctx.drawImage(video, -canvas.width / 2, -canvas.height / 2);
+            ctx.drawImage(video, -outputHeight / 2, -outputWidth / 2);
             ctx.restore();
 
-            imgcontext.clearRect(0, 0, canvas.width, canvas.height);
+            imgcontext.clearRect(0, 0, outputWidth, outputHeight);
             imgcontext.save();
-            imgcontext.translate(canvas.width / 2, canvas.height / 2);
+            imgcontext.translate(outputWidth / 2, outputHeight / 2);
             imgcontext.rotate(-Math.PI / 2);
-            imgcontext.drawImage(video, -canvas.width / 2, -canvas.height / 2);
+            imgcontext.drawImage(video, -outputHeight / 2, -outputWidth / 2);
             imgcontext.restore();
         }
 
