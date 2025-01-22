@@ -23,3 +23,9 @@ export const sqsApiFunction = defineFunction({
     entry: "./sqsHandler.ts",
     timeoutSeconds: 60,
 })
+
+export const imageApiFunction = defineFunction({
+    name: "image-api",
+    entry: "./imageHandler.ts",
+    timeoutSeconds: 60,
+})

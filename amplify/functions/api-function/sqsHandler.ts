@@ -57,11 +57,7 @@ async function processMessage(messageBody: any) {
   const s3Data = await s3.getObject(s3Params).promise();
   const base64Data = s3Data.Body.toString('base64');
 
-  await sendEmailWithAttachment(
-    EMAIL_ID,
-    base64Data,
-    messageBody.user_data.email // assuming this is the recipient's email
-  );
+  // await sendEmailWithAttachment( EMAIL_ID, base64Data, messageBody.user_data.email);
 
   const dynamodb = new DynamoDB.DocumentClient();
   const params = {

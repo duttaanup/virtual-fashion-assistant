@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { Alert, Box, BreadcrumbGroup, Button, Cards, Container, FormField, Input, SegmentedControl, SpaceBetween, Wizard } from "@cloudscape-design/components";
+import { Alert, Box, BreadcrumbGroup, Button, Cards, Container, FormField, Input, Modal, SegmentedControl, SpaceBetween, Wizard } from "@cloudscape-design/components";
 import { useEffect, useState } from "react";
 import { enable, record } from 'aws-amplify/analytics';
 import { syncMessages, } from 'aws-amplify/in-app-messaging';
@@ -8,6 +8,7 @@ import { AppUtility, ProcessActionEnum, ProcessActionTypeEnum, UserStateEnum, ga
 import { uploadData } from 'aws-amplify/storage';
 import { StorageImage } from "@aws-amplify/ui-react-storage";
 import outputs from "../../amplify_outputs.json";
+import QRCode from "react-qr-code";
 
 let VIDEO_STREAM = null;
 const bucketName = outputs.storage.bucket_name;
@@ -16,6 +17,7 @@ const garmentList = garmentListFn();
 function Fashion() {
     const [activeStepIndex, setActiveStepIndex] = useState(0);
     const [inputValue, setInputValue] = useState("");
+    const [userId, setUserId] = useState("");
     const [user, setUser] = useState(null);
     const [imagecount, setImagecount] = useState(1);
     const [showalert, setShowalert] = useState(false);
@@ -27,6 +29,8 @@ function Fashion() {
     const [selectedItems, setSelectedItems] = useState([]);
     const [cameraOrientation, setCameraOrientation] = useState('portrait');
     const [cameraRotation, setCameraRotation] = useState('Right');
+    const [showAck, setShowAck] = useState(false)
+    const [qrurl, setQrurl] = useState("")
 
     const initializeCamera = () => {
         const video = document.getElementById('camera-feed');
@@ -213,7 +217,6 @@ function Fashion() {
 
     const registerUser = async () => {
         if (inputValue != "") {
-            const userId = AppUtility.guid()
             let userPayload = AppUtility.generateUserPayload();
             userPayload.email = inputValue;
             userPayload.user_id = userId;
@@ -263,6 +266,7 @@ function Fashion() {
         setActiveStepIndex(0);
         setInputValue("");
         setUser(null);
+        setUserId("");
         setImagecount(1);
         setShowalert(false);
         setSelectedimage(null);
@@ -294,13 +298,16 @@ function Fashion() {
                 "email_id": tempUser.email
             })
             record({ name: 'onSetupSubmition' })
-            alert("Thank you. Will send details over mail once completed")
-            resetAll();
+            setQrurl(`https://api.mysampledemo.site/image?id=${user.user_id}`)
+            setShowAck(true);
         }
     }
 
     useEffect(() => {
         setImagecount(1);
+        const tempUserId =  AppUtility.guid();
+        setUserId(tempUserId);
+        setInputValue(`duttanup+${tempUserId}@amazon.com`);
         if (activeStepIndex == 1)
             initializeCamera()
         else
@@ -356,20 +363,6 @@ function Fashion() {
                     content: (
                         <Container fitHeight>
                             <SpaceBetween size="l">
-                                <FormField
-                                    description="Provide participant's email id"
-                                    label="Email"
-                                >
-                                    <Input
-                                        placeholder="Enter email id"
-                                        type="email"
-                                        value={inputValue}
-                                        onChange={event =>
-                                            setInputValue(event.detail.value)
-                                        }
-                                    />
-                                </FormField>
-                                <hr />
                                 <SpaceBetween size="l" alignItems="center">
                                     <SegmentedControl selectedId={selectedGender}
                                         label="Default segmented control"
@@ -449,6 +442,16 @@ function Fashion() {
                 },
             ]}
         />
+
+        <Modal visible={showAck}>
+            <SpaceBetween size="l" alignItems="center">
+                <h3>Thank you. Please scan this QR code. Your image will be available after 30 seconds.</h3>
+                <QRCode value={qrurl} />
+                <h5 style={{ textAlign: "center"}}>In case of any query reach out to us with the id mentioned below <br/> {user?.user_id} </h5>
+                <Button variant="primary" onClick={() => { setShowAck(false); resetAll();}}>Close</Button>
+            </SpaceBetween>
+
+        </Modal>
     </Container>)
 }
 

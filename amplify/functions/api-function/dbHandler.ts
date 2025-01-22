@@ -78,7 +78,7 @@ async function postActions(event) {
       },
       Source: EMAIL_ID,
     };
-    await ses.sendEmail(emailParams).promise();
+    //await ses.sendEmail(emailParams).promise();
   } else if (body.action == ActionTypes.UPDATE_USER) {
     if (body.action_type == ProcessTypes.SELECTED_USER_IMAGE) {
       const params = {
@@ -143,7 +143,7 @@ async function postActions(event) {
     };
     const s3Data = await s3.getObject(s3Params).promise();
     const base64Data = s3Data.Body.toString('base64');
-    await sendEmailWithAttachment( EMAIL_ID, base64Data, db_item.email );
+    //await sendEmailWithAttachment( EMAIL_ID, base64Data, db_item.email );
 
   }
   return {

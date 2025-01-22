@@ -15,7 +15,7 @@ import {
     Model,
 } from "aws-cdk-lib/aws-apigateway";
 import { Policy, PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
-import { dbApiFunction, aiApiFunction, confyApiFunction, sqsApiFunction } from "./functions/api-function/resource";
+import { dbApiFunction, aiApiFunction, confyApiFunction, sqsApiFunction, imageApiFunction } from "./functions/api-function/resource";
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import { CfnApp, CfnSegment } from 'aws-cdk-lib/aws-pinpoint';
@@ -25,7 +25,7 @@ const SUPPORT_EMAIL_ID = "duttanup@amazon.com";
 const COMFY_SERVER = "http://vfa-nlb-02fd1bad54324ae5.elb.ap-south-1.amazonaws.com"
 
 const backend = defineBackend({
-    auth, dbApiFunction, aiApiFunction, confyApiFunction, storage, sqsApiFunction
+    auth, dbApiFunction, aiApiFunction, confyApiFunction, storage, sqsApiFunction, imageApiFunction
 });
 
 //add m2m application type app client on user pool
@@ -189,14 +189,18 @@ backend.sqsApiFunction.resources.lambda.addToRolePolicy(
 // add s3 access for storage
 backend.storage.resources.bucket.grantReadWrite(backend.sqsApiFunction.resources.lambda);
 backend.storage.resources.bucket.grantReadWrite(backend.dbApiFunction.resources.lambda);
+backend.storage.resources.bucket.grantReadWrite(backend.imageApiFunction.resources.lambda);
+
 
 // add dynamodb access
 userRegistrationTable.grantReadWriteData(backend.dbApiFunction.resources.lambda);
 userRegistrationTable.grantReadWriteData(backend.sqsApiFunction.resources.lambda);
+userRegistrationTable.grantReadWriteData(backend.imageApiFunction.resources.lambda);
 
 const dblambdaIntegration = new LambdaIntegration(backend.dbApiFunction.resources.lambda);
 const ailambdaIntegration = new LambdaIntegration(backend.aiApiFunction.resources.lambda);
 const confylambdaIntegration = new LambdaIntegration(backend.confyApiFunction.resources.lambda);
+const imageLambdaIntegration = new LambdaIntegration(backend.imageApiFunction.resources.lambda);
 
 const authConfig = {
     authorizationType: AuthorizationType.COGNITO,
@@ -239,6 +243,9 @@ aiPath.addMethod("POST", ailambdaIntegration, authConfig);
 const confyPath = vfaAPI.root.addResource("confy");
 confyPath.addMethod("POST", confylambdaIntegration, authConfig);
 
+
+const imagePath = vfaAPI.root.addResource("image");
+imagePath.addMethod("GET", imageLambdaIntegration);
 
 const callbackPath = vfaAPI.root.addResource("callback");
 // Create IAM role for API Gateway to SQS integration
@@ -326,9 +333,11 @@ backend.auth.resources.unauthenticatedUserIamRole.attachInlinePolicy(
 
 backend.dbApiFunction.addEnvironment("USER_REGISTRATION_TABLE", userRegistrationTable.tableName);
 backend.sqsApiFunction.addEnvironment("USER_REGISTRATION_TABLE", userRegistrationTable.tableName);
+backend.imageApiFunction.addEnvironment("USER_REGISTRATION_TABLE", userRegistrationTable.tableName);
 
 backend.dbApiFunction.addEnvironment("S3_BUCKET", backend.storage.resources.bucket.bucketName);
 backend.sqsApiFunction.addEnvironment("S3_BUCKET", backend.storage.resources.bucket.bucketName);
+backend.imageApiFunction.addEnvironment("S3_BUCKET", backend.storage.resources.bucket.bucketName);
 
 backend.dbApiFunction.addEnvironment("EMAIL_ID", EMAIL_ID);
 backend.sqsApiFunction.addEnvironment("EMAIL_ID", EMAIL_ID);
