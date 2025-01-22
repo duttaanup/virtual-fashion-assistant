@@ -26,7 +26,7 @@ function Fashion() {
     const [isLoadingNext, setIsLoadingNext] = useState(false);
     const [selectedItems, setSelectedItems] = useState([]);
     const [cameraOrientation, setCameraOrientation] = useState('portrait');
-    const [cameraRotation, setCameraRotation] = useState('Left');
+    const [cameraRotation, setCameraRotation] = useState('Right');
 
     const initializeCamera = () => {
         const video = document.getElementById('camera-feed');
@@ -417,11 +417,9 @@ function Fashion() {
                     description: "",
                     content: (
                         <Container fitHeight>
-                            <SpaceBetween size="l" alignItems="center">
+                            <SpaceBetween size="xl" alignItems="center">
                                 <video id="camera-feed" className="camera-rotate-left" playsInline></video>
                                 <SpaceBetween size="l" direction="horizontal">
-                                    <Button iconName="video-camera-on" onClick={() => { rotateCamera('Left') }} >Rotate Left</Button>
-                                    <Button iconName="video-camera-on" onClick={() => { rotateCamera('Right') }} >Rotate Right</Button>
                                     <Button variant="primary" onClick={() => { capturePhoto() }} disabled={(imagecount > 5)}>Take a Photo</Button>
                                     <Button iconName="refresh" onClick={() => { clearAllCanvas() }} disabled={(imagecount <= 1)}>Clear Photo(s)</Button>
                                 </SpaceBetween>

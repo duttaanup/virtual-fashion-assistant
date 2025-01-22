@@ -8,20 +8,10 @@
   border: 5px solid #006ce0;
   border-radius: 54px;
   box-shadow: 10px 10px 19px;
-  height: auto;
+  margin: 90px 0px 100px 0px;
+  height: 250px !important;
   object-fit: contain;
-}
-
-.camera-rotate-left{
-  transform: rotate(-90deg);
-  margin: 70px 0px;
-  height: 350px !important;
-}
-
-.camera-rotate-right{
-  transform: rotate(90deg);
-  margin: 70px 0px;
-  height: 350px !important;
+  transform: rotate(90deg) !important;
 }
 
 .camera-img{
@@ -37,7 +27,6 @@
   box-shadow: 1px 1px 7px;
   min-height: 75px;
   transition: all 0.3s ease;
-  /* Add smooth transition for all changes */
   cursor: pointer;
 }
 
