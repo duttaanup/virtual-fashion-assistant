@@ -93,7 +93,7 @@ export const AppUtility = {
 }
 
 export const garmentListFn = () => {
-    const garmentCount = 9
+    const garmentCount = 12
     let list = [];
     for (let i = 1; i <= garmentCount; i++) {
         list.push({ "gender" : "male" , "image_id": `m_${i}.jpg` , "alt" : `male garment - ${i}`});
