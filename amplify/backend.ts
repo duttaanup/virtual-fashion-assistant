@@ -20,9 +20,9 @@ import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import { CfnApp, CfnSegment } from 'aws-cdk-lib/aws-pinpoint';
 
-const EMAIL_ID = "no-reply@mysampledemo.site";
-const SUPPORT_EMAIL_ID = "duttanup@amazon.com";
-const COMFY_SERVER = "http://vfa-nlb-02fd1bad54324ae5.elb.ap-south-1.amazonaws.com"
+const EMAIL_ID = "no-reply@domain.com";
+const SUPPORT_EMAIL_ID = "email@domain.com";
+const COMFY_SERVER = "<link-to-your-comfy_server>"
 
 const backend = defineBackend({
     auth, dbApiFunction, aiApiFunction, confyApiFunction, storage, sqsApiFunction, imageApiFunction
